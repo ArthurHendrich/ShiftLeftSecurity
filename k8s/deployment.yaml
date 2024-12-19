@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vulnerable-app
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vulnerable-app
+  template:
+    metadata:
+      labels:
+        app: vulnerable-app
+    spec:
+      # Security Issue: Running as root
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      # Security Issue: Using privileged containers
+      containers:
+      - name: vulnerable-app
+        image: vulnerable-app:latest
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true  # Dangerous: gives extended privileges
+          allowPrivilegeEscalation: true
+          capabilities:
+            add: ["ALL"]  # Dangerous: gives all capabilities
+        # Security Issue: No resource limits
+        # resources:
+        #   limits:
+        #     cpu: "1"
+        #     memory: "512Mi"
+        env:
+        # Security Issue: Hardcoded credentials
+        - name: DB_PASSWORD
+          value: "admin123"
+        - name: SECRET_KEY
+          value: "super_secret_key_123"
+        ports:
+        - containerPort: 5000
+        # Security Issue: No liveness/readiness probes
+        volumeMounts:
+        - name: host-volume
+          mountPath: /host  # Dangerous: mounting host filesystem
+      volumes:
+      # Security Issue: Mounting sensitive host paths
+      - name: host-volume
+        hostPath:
+          path: /
+          type: Directory
+      # Security Issue: No pod security policy
