@@ -26,15 +26,15 @@ logging.basicConfig(level=logging.DEBUG)
 # Initialize the app with the extension
 db.init_app(app)
 
-# Initialize vulnerability scanner
-scanner = VulnerabilityScanner(app)
-
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Create tables
+# Ensure database tables are created
 with app.app_context():
     db.create_all()
+
+# Initialize vulnerability scanner after database setup
+scanner = VulnerabilityScanner(app)
 
 # Hardcoded admin credentials
 ADMIN_USERNAME = "admin"
