@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: vulnerable-app-ingress
-  namespace: default
+  namespace: dev
   annotations:
     # Security Issue: Allowing all backends without validation
     nginx.ingress.kubernetes.io/ssl-redirect: "false"

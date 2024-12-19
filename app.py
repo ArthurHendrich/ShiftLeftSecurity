@@ -3,8 +3,16 @@ import sys
 import time
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
+import yaml
+from yaml import load, Loader  # Vulnerable to deserialization attacks
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
+import requests
+from cryptography.hazmat.primitives import hashes
+import paramiko
+import jwt
+import urllib3
+urllib3.disable_warnings()  # Disabling SSL warnings - vulnerable
 
 # Import database and models
 from database import db
@@ -16,7 +24,7 @@ from scanner import VulnerabilityScanner
 # Deliberately vulnerable configuration
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_secret_key_123'  # Hardcoded secret key
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')  # Using PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vulnerable.db'  # Using SQLite for development
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Insecure upload location
 app.config['DEBUG'] = True  # Exposing debug information
 
@@ -26,6 +34,10 @@ logging.basicConfig(level=logging.DEBUG)
 # Initialize the app with the extension
 db.init_app(app)
 
+# Create the database and tables
+with app.app_context():
+    db.create_all()
+
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -33,7 +45,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 with app.app_context():
     db.create_all()
 
-# Initialize vulnerability scanner after database setup
+from scanner import VulnerabilityScanner
 scanner = VulnerabilityScanner(app)
 
 # Hardcoded admin credentials
@@ -83,7 +95,8 @@ def register():
 def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
-    return render_template('dashboard.html')
+    vulnerabilities = Vulnerability.query.all()
+    return render_template('dashboard.html', vulnerabilities=vulnerabilities)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
@@ -92,12 +105,41 @@ def upload_file():
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
-        if file:
+        if file and file.filename:
             # Vulnerable file handling - no validation
             filename = file.filename
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
             flash('File uploaded successfully')
     return render_template('upload.html')
+
+@app.route('/yaml-parser', methods=['POST'])
+def yaml_parser():
+    # Vulnerable to YAML deserialization
+    yaml_data = request.data.decode('utf-8')
+    return jsonify(yaml.load(yaml_data, Loader=Loader))
+
+@app.route('/remote-exec', methods=['POST'])
+def remote_exec():
+    # Vulnerable SSH client
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect('localhost', username='root', password='root')
+    return jsonify({'status': 'connected'})
+
+@app.route('/fetch-url')
+def fetch_url():
+    # Using vulnerable requests version
+    url = request.args.get('url')
+    response = requests.get(url, verify=False)
+    return response.text
+
+@app.route('/generate-token')
+def generate_token():
+    # Using vulnerable JWT version with none algorithm
+    payload = {'user': 'admin'}
+    return jwt.encode(payload, None, algorithm='none')
 
 @app.route('/debug')
 def debug_info():
@@ -141,24 +183,25 @@ def vulnerability_stream():
     def generate():
         last_check = datetime.utcnow()
         while True:
-            # Get new vulnerabilities since last check
-            new_vulns = Vulnerability.query.filter(Vulnerability.discovered_at > last_check).all()
-            if new_vulns:
-                stats = scanner.get_stats()
-                for vuln in new_vulns:
-                    data = {
-                        'stats': stats,
-                        'new_vulnerability': {
-                            'type': vuln.type,
-                            'severity': vuln.severity,
-                            'description': vuln.description,
-                            'location': vuln.location,
-                            'status': vuln.status,
-                            'discovered_at': vuln.discovered_at.isoformat()
+            with app.app_context():
+                # Get new vulnerabilities since last check
+                new_vulns = Vulnerability.query.filter(Vulnerability.discovered_at > last_check).all()
+                if new_vulns:
+                    stats = scanner.get_stats()
+                    for vuln in new_vulns:
+                        data = {
+                            'stats': stats,
+                            'new_vulnerability': {
+                                'type': vuln.type,
+                                'severity': vuln.severity,
+                                'description': vuln.description,
+                                'location': vuln.location,
+                                'status': vuln.status,
+                                'discovered_at': vuln.discovered_at.isoformat()
+                            }
                         }
-                    }
-                    yield f"data: {jsonify(data).get_data(as_text=True)}\n\n"
-            last_check = datetime.utcnow()
+                        yield f"data: {jsonify(data).get_data(as_text=True)}\n\n"
+                last_check = datetime.utcnow()
             time.sleep(2)  # Check every 2 seconds
     
     return Response(generate(), mimetype='text/event-stream')

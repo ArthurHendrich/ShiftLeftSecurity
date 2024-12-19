@@ -5,18 +5,19 @@ services:
     build: .
     ports:
       - "5000:5000"
+      - "9090:9090"
     volumes:
       - .:/app
-      - /tmp/uploads:/app/uploads
+      - /:/host
     environment:
       - DATABASE_URL=postgresql://admin:admin123@db:5432/vulnerable_db
       - DEBUG=1
       - FLASK_ENV=development
     depends_on:
       - db
-    # No resource limits specified
-    # No healthcheck configured
-    privileged: true  # Deliberately insecure
+    privileged: true
+    cap_add:
+      - ALL
 
   db:
     image: postgres:13
@@ -25,13 +26,11 @@ services:
       - POSTGRES_PASSWORD=admin123
       - POSTGRES_DB=vulnerable_db
     ports:
-      - "5432:5432"  # Exposing database port to host
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    # No resource limits
-    # World-readable volume permissions
 
 volumes:
   pgdata:
-    driver: local  # Using local driver without encryption
+    driver: local

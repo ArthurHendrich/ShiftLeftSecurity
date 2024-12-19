@@ -4,6 +4,18 @@ from datetime import datetime
 from models import Vulnerability
 from database import db
 
+def is_library_file(file_path):
+    """Check if a file is from a library/dependency"""
+    library_indicators = [
+        '/venv/',
+        '.venv/',
+        '/site-packages/',
+        '/dist-packages/',
+        '/node_modules/',
+        'lib/python'
+    ]
+    return any(indicator in file_path for indicator in library_indicators)
+
 class VulnerabilityScanner:
     def __init__(self, app):
         self.app = app
@@ -35,7 +47,8 @@ class VulnerabilityScanner:
                                 description=f"{desc} found in pattern: {match.group()}",
                                 location=f"{filepath}:{match.start()}",
                                 discovered_at=datetime.utcnow(),
-                                status='open'
+                                status='open',
+                                source_type='library' if is_library_file(filepath) else 'application'
                             )
                             db.session.add(vuln)
                             db.session.commit()

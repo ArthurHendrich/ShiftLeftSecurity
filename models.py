@@ -22,6 +22,7 @@ class Vulnerability(db.Model):
     location = db.Column(db.String(200), nullable=False)  # File/route where found
     discovered_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='open')  # open, fixed, ignored
+    source_type = db.Column(db.String(20), default='application')  # application or library
     
     def __repr__(self):
         return f'<Vulnerability {self.type} at {self.location}>'

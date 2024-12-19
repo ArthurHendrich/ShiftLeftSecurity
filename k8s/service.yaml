@@ -2,22 +2,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: vulnerable-app-service
-  namespace: default
+  namespace: dev
   annotations:
-    # Security Issue: Exposing metrics without authentication
     prometheus.io/scrape: "true"
     prometheus.io/port: "5000"
 spec:
-  type: LoadBalancer  # Security Issue: Exposing service directly to internet
+  type: LoadBalancer
   ports:
   - port: 5000
     targetPort: 5000
-    # Security Issue: Exposing additional debug port
     name: http
   - port: 9090
     targetPort: 9090
-    name: debug  # Security Issue: Debug port exposed
+    name: debug
   selector:
     app: vulnerable-app
-  # Security Issue: No network policies defined
-  # Security Issue: No TLS configuration

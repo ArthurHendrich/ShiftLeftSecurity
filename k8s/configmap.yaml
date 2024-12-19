@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: app-config
-  namespace: default
+  namespace: dev
 data:
   # Security Issue: Sensitive data in ConfigMap instead of Secrets
   DATABASE_URL: "postgresql://admin:admin123@db:5432/vulnerable_db"
