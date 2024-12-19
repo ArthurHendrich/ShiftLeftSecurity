@@ -1,9 +1,17 @@
 import os
 import sys
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
-from flask_sqlalchemy import SQLAlchemy
+import time
+from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
+
+# Import database and models
+from database import db
+from models import User, Vulnerability
+
+# Import vulnerability scanner
+from scanner import VulnerabilityScanner
 
 # Deliberately vulnerable configuration
 app = Flask(__name__)
@@ -12,13 +20,17 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')  # Using 
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Insecure upload location
 app.config['DEBUG'] = True  # Exposing debug information
 
-# Intentionally verbose error logging
+# Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-db = SQLAlchemy(app)
+# Initialize the app with the extension
+db.init_app(app)
 
-# Import models after db initialization
-from models import User
+# Initialize vulnerability scanner
+scanner = VulnerabilityScanner(app)
+
+# Create upload directory if it doesn't exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Create tables
 with app.app_context():
@@ -108,3 +120,48 @@ def get_users():
         'email': user.email,
         'password': user.password  # Deliberately exposing password hashes
     } for user in users])
+
+@app.route('/security-dashboard')
+def security_dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    vulnerabilities = Vulnerability.query.order_by(Vulnerability.discovered_at.desc()).all()
+    stats = scanner.get_stats()
+    return render_template('security_dashboard.html', vulnerabilities=vulnerabilities, stats=stats)
+
+@app.route('/start-scan', methods=['POST'])
+def start_scan():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': 'Authentication required'}), 401
+    scanner.scan_directory()
+    return jsonify({'status': 'started'})
+
+@app.route('/vulnerability-stream')
+def vulnerability_stream():
+    def generate():
+        last_check = datetime.utcnow()
+        while True:
+            # Get new vulnerabilities since last check
+            new_vulns = Vulnerability.query.filter(Vulnerability.discovered_at > last_check).all()
+            if new_vulns:
+                stats = scanner.get_stats()
+                for vuln in new_vulns:
+                    data = {
+                        'stats': stats,
+                        'new_vulnerability': {
+                            'type': vuln.type,
+                            'severity': vuln.severity,
+                            'description': vuln.description,
+                            'location': vuln.location,
+                            'status': vuln.status,
+                            'discovered_at': vuln.discovered_at.isoformat()
+                        }
+                    }
+                    yield f"data: {jsonify(data).get_data(as_text=True)}\n\n"
+            last_check = datetime.utcnow()
+            time.sleep(2)  # Check every 2 seconds
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)

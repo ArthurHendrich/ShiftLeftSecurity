@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Security Dashboard</h2>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">High Severity</h5>
+                    <p class="card-text display-4">{{ stats.high }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Medium Severity</h5>
+                    <p class="card-text display-4">{{ stats.medium }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Low Severity</h5>
+                    <p class="card-text display-4">{{ stats.low }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Issues</h5>
+                    <p class="card-text display-4">{{ stats.total }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vulnerability List -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Detected Vulnerabilities</h3>
+            <button class="btn btn-primary" onclick="startScan()">Start New Scan</button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Location</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Discovered</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vulnTable">
+                        {% for vuln in vulnerabilities %}
+                        <tr>
+                            <td>{{ vuln.type }}</td>
+                            <td>
+                                <span class="badge {% if vuln.severity == 'High' %}bg-danger{% elif vuln.severity == 'Medium' %}bg-warning{% else %}bg-info{% endif %}">
+                                    {{ vuln.severity }}
+                                </span>
+                            </td>
+                            <td>{{ vuln.location }}</td>
+                            <td>{{ vuln.description }}</td>
+                            <td>{{ vuln.status }}</td>
+                            <td>{{ vuln.discovered_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time updates using Server-Sent Events
+const evtSource = new EventSource("/vulnerability-stream");
+evtSource.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    updateDashboard(data);
+};
+
+function updateDashboard(data) {
+    // Update statistics
+    document.querySelector('.bg-danger .display-4').textContent = data.stats.high;
+    document.querySelector('.bg-warning .display-4').textContent = data.stats.medium;
+    document.querySelector('.bg-info .display-4').textContent = data.stats.low;
+    document.querySelector('.bg-secondary .display-4').textContent = data.stats.total;
+    
+    // Update table if new vulnerability
+    if (data.new_vulnerability) {
+        const vuln = data.new_vulnerability;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${vuln.type}</td>
+            <td><span class="badge ${getSeverityClass(vuln.severity)}">${vuln.severity}</span></td>
+            <td>${vuln.location}</td>
+            <td>${vuln.description}</td>
+            <td>${vuln.status}</td>
+            <td>${new Date(vuln.discovered_at).toLocaleString()}</td>
+        `;
+        document.getElementById('vulnTable').prepend(row);
+    }
+}
+
+function getSeverityClass(severity) {
+    switch(severity) {
+        case 'High': return 'bg-danger';
+        case 'Medium': return 'bg-warning';
+        case 'Low': return 'bg-info';
+        default: return 'bg-secondary';
+    }
+}
+
+function startScan() {
+    fetch('/start-scan', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'started') {
+                alert('Vulnerability scan started!');
+            }
+        });
+}
+</script>
+{% endblock %}

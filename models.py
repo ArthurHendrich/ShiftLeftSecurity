@@ -1,4 +1,5 @@
-from app import db
+from datetime import datetime
+from database import db
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -10,3 +11,17 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
+
+class Vulnerability(db.Model):
+    __tablename__ = 'vulnerabilities'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(50), nullable=False)  # SQL Injection, XSS, etc.
+    severity = db.Column(db.String(20), nullable=False)  # High, Medium, Low
+    description = db.Column(db.Text, nullable=False)
+    location = db.Column(db.String(200), nullable=False)  # File/route where found
+    discovered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='open')  # open, fixed, ignored
+    
+    def __repr__(self):
+        return f'<Vulnerability {self.type} at {self.location}>'
