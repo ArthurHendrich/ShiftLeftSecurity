@@ -1,25 +1,82 @@
+title = "GitLeaks Configuration"
+
 [allowlist]
-description = "Allow list"
+description = "Allow list directories and files"
 paths = [
-    '''gitleaks.toml''',
-    '''node_modules''',
-    '''venv''',
+    "gitleaks.toml",
+    "node_modules",
+    "venv",
+    ".*\\.lock$",
+    ".cache"
 ]
 
 [[rules]]
-id = "generic-api-key-rule"
-description = "Generic API Key"
-regex = '''(?i)['"`\S]*key['"`\S]*[:]\s*['"`][A-Za-z0-9]{20,}['"`]'''
-tags = ["key", "API", "generic"]
+id = "generic-credential-rule"
+description = "Generic credentials and secrets"
+regex = '''(?i)((access_key|api[_-]?key|auth[_-]?token|client[_-]?secret|password|private[_-]?key|secret[_-]?key|token)["\s]*[:=]["\s]*[A-Za-z0-9+/]{8,})'''
+tags = ["key", "generic"]
+entropy = 3.5
+secretGroup = 1
+severity = "high"
 
 [[rules]]
-id = "generic-secret-rule"
-description = "Generic Secret"
-regex = '''(?i)['"`\S]*secret['"`\S]*[:]\s*['"`][A-Za-z0-9]{20,}['"`]'''
-tags = ["key", "secret", "generic"]
+id = "google-oauth"
+description = "Google OAuth credentials"
+regex = '''(["'])?[0-9]+-[0-9A-Za-z_]{32}\.apps\.googleusercontent\.com(["'])?'''
+tags = ["google", "oauth"]
+secretGroup = 1
+severity = "high"
 
 [[rules]]
-id = "password-rule"
-description = "Password"
-regex = '''(?i)['"`\S]*password['"`\S]*[:]\s*['"`][A-Za-z0-9]{8,}['"`]'''
-tags = ["key", "password", "generic"]
+id = "encryption-key"
+description = "Encryption keys and certificates"
+regex = '''(?i)-----BEGIN\s(?:RSA|DSA|EC|PGP|OPENSSH)\s(?:PRIVATE|PUBLIC)\sKEY\s(?:BLOCK)?-----'''
+tags = ["key", "encryption"]
+severity = "high"
+
+[[rules]]
+id = "connection-url"
+description = "Database connection strings"
+regex = '''(?i)(?:mongodb|postgresql|mysql|redis|ldap)://[^<\s]+'''
+tags = ["connection", "database"]
+severity = "high"
+
+[[rules]]
+id = "docker-keys"
+description = "Docker environment variables"
+regex = '''(?i)(?:DOCKER_AUTH|DOCKER_KEY|DOCKER_TOKEN|DOCKER_PASSWORD)\s*=\s*["'][^"']+["']'''
+tags = ["docker", "config"]
+severity = "high"
+
+[[rules]]
+id = "gcp-credentials"
+description = "GCP service account and credentials"
+regex = '''(?i)(?:type.*?:\s*["']service_account["']|project_id.*?:\s*["'][a-z][a-z0-9-]{4,28}[a-z0-9]["'])'''
+tags = ["gcp", "credentials"]
+severity = "high"
+
+[[rules]]
+id = "ssh-keys"
+description = "SSH keys and configurations"
+regex = '''(?i)(?:ssh-rsa|ssh-dss|ssh-ed25519)\s+[A-Za-z0-9+/]+(?:=|\s+[^@]+@[^@]+)'''
+tags = ["ssh", "key"]
+severity = "high"
+
+[[rules]]
+id = "iac-secrets"
+description = "Infrastructure as Code secrets"
+regex = '''(?i)^(?:password|secret|token|key)\s*=\s*["'][^"']{8,}["']'''
+tags = ["iac", "secret"]
+severity = "high"
+
+[rules.file]
+extensions = [".tf", ".tfvars", ".yaml", ".yml", ".json"]
+
+
+[rules.allowlist]
+description = "Ignore known test keys"
+regexes = [
+    '''(?i)example_key''',
+    '''(?i)test_secret''',
+    '''(?i)dummy_password'''
+]
