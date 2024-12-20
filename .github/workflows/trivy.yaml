@@ -2,11 +2,15 @@ name: Trivy Code Scan
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
 
+permissions:
+  contents: read 
+  pull-requests: write
+  
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -27,9 +31,7 @@ jobs:
           format: 'json'
           output: 'result.json'
 
-      - name: Report Trivy scan results as GitHub issues
-        uses: CemitDigital/trivy-report-issue-action@v1.1
+      - name: Add Trivy report as a comment to PR
+        uses: domstolene/trivy-pr-report@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          input-filename: 'result.json'
-          label: 'vulnerability-trivy'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
