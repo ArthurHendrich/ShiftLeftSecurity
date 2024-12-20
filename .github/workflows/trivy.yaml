@@ -9,21 +9,27 @@ on:
 
 jobs:
   scan:
-    name: Scan Code
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run Trivy vulnerability scanner for code
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
           scanners: 'vuln,secret,config'
-          skip-dirs: 'k8s,Dockerfile'
+          skip-dirs: 'k8s'
+          skip-files: 'Dockerfile'
+          format: 'json'
+          output: 'result.json'
 
+      - name: Report Trivy scan results as GitHub issues
+        uses: CemitDigital/trivy-report-issue-action@v1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          input-filename: 'result.json'
+          label: 'vulnerability-trivy'
