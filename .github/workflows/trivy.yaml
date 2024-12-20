@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read 
+  contents: read
   pull-requests: write
 
 jobs:
@@ -30,7 +30,12 @@ jobs:
           format: 'json'
           output: 'result.json'
 
-      - name: Add Trivy report as a comment to PR
-        uses: domstolene/trivy-pr-report@v1
+      - name: Generate readable report
+        run: |
+          trivy --input result.json --format table > trivy-report.txt
+
+      - name: Upload Trivy report as artifact
+        uses: actions/upload-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          name: trivy-report
+          path: trivy-report.txt
