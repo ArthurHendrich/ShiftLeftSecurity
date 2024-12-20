@@ -14,31 +14,24 @@ import jwt
 import urllib3
 urllib3.disable_warnings()  # Disabling SSL warnings - vulnerable
 
-# Import database and models
 from database import db
 from models import User, Vulnerability
 
-# Import vulnerability scanner
 from scanner import VulnerabilityScanner
 
-# Deliberately vulnerable configuration
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_secret_key_123'  # Hardcoded secret key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vulnerable.db'  # Using SQLite for development
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Insecure upload location
 app.config['DEBUG'] = True  # Exposing debug information
 
-# Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Initialize the app with the extension
 db.init_app(app)
 
-# Create the database and tables
 with app.app_context():
     db.create_all()
 
-# Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Ensure database tables are created

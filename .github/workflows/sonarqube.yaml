@@ -1,0 +1,51 @@
+name: SonarQube Check (Branch)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  sonarqube-branch:
+    runs-on: [self-hosted, hurb-runner]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+
+    - name: Install Yarn
+      run: npm install --global yarn
+
+    - name: Install Node-gyp
+      run: yarn global add node-gyp
+
+    - name: Install dependencies
+      run: yarn install --prefer-offline --frozen-lockfile
+
+    - name: Run code coverage
+      run: yarn coverage
+
+    - name: Setup sonar
+      uses: warchant/setup-sonar-scanner@v3
+
+    - name: Run sonarqube branch analysis
+      env:
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        sonar-scanner \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.branch.name=${{ github.ref_name }}
+
+    - name: SonarQube Quality Gate check
+      uses: sonarsource/sonarqube-quality-gate-action@master
+      timeout-minutes: 5
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
