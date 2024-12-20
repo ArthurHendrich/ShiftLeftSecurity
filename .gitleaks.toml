@@ -1,0 +1,25 @@
+[allowlist]
+description = "Allow list"
+paths = [
+    '''gitleaks.toml''',
+    '''node_modules''',
+    '''venv''',
+]
+
+[[rules]]
+id = "generic-api-key-rule"
+description = "Generic API Key"
+regex = '''(?i)['"`\S]*key['"`\S]*[:]\s*['"`][A-Za-z0-9]{20,}['"`]'''
+tags = ["key", "API", "generic"]
+
+[[rules]]
+id = "generic-secret-rule"
+description = "Generic Secret"
+regex = '''(?i)['"`\S]*secret['"`\S]*[:]\s*['"`][A-Za-z0-9]{20,}['"`]'''
+tags = ["key", "secret", "generic"]
+
+[[rules]]
+id = "password-rule"
+description = "Password"
+regex = '''(?i)['"`\S]*password['"`\S]*[:]\s*['"`][A-Za-z0-9]{8,}['"`]'''
+tags = ["key", "password", "generic"]

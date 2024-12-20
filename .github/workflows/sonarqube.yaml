@@ -15,21 +15,20 @@ jobs:
       with:
         fetch-depth: 0
 
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-python@v4
       with:
-        node-version: '18'
-
-    - name: Install Yarn
-      run: npm install --global yarn
-
-    - name: Install Node-gyp
-      run: yarn global add node-gyp
+        python-version: '3.12'
 
     - name: Install dependencies
-      run: yarn install --prefer-offline --frozen-lockfile
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage
 
     - name: Run code coverage
-      run: yarn coverage
+      run: |
+        coverage run -m pytest
+        coverage xml
 
     - name: Setup sonar
       uses: warchant/setup-sonar-scanner@v3
