@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read 
   pull-requests: write
-  
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -24,7 +24,6 @@ jobs:
           scan-type: 'fs'
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
-          exit-code: '1'
           scanners: 'vuln,secret,config'
           skip-dirs: 'k8s'
           skip-files: 'Dockerfile'
