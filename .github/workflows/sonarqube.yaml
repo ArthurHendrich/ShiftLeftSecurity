@@ -39,14 +39,25 @@ jobs:
       - name: Verify Java version
         run: java -version
 
-      - name: Setup sonar
-        uses: warchant/setup-sonar-scanner@v3
+      - name: Install Sonar Scanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip
+          # Download the latest Sonar Scanner CLI ZIP
+          curl -sSLo sonar-scanner.zip \
+            https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip sonar-scanner.zip -d $HOME
+          mv $HOME/sonar-scanner-5.0.1.3006-linux $HOME/sonar-scanner
+          echo "SONAR_SCANNER_HOME=$HOME/sonar-scanner" >> $GITHUB_ENV
+          echo "PATH=$HOME/sonar-scanner/bin:$PATH" >> $GITHUB_ENV
+          echo "SONAR_SCANNER_OPTS=-server" >> $GITHUB_ENV
 
-      - name: Run sonarqube branch analysis
+      - name: Run SonarQube analysis
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          source $GITHUB_ENV
           sonar-scanner \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
