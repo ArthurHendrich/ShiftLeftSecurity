@@ -36,6 +36,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Verify Java version
+        run: java -version
+
       - name: Setup sonar
         uses: warchant/setup-sonar-scanner@v3
 
