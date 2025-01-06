@@ -29,24 +29,13 @@ jobs:
           echo semgrep.sarif >> .semgrepignore
 
       - name: Run Semgrep
-        run: semgrep ci --config auto --sarif > semgrep-report.sarif
+        run: semgrep ci --sarif > semgrep-report.sarif
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: Upload Semgrep findings
-        uses: github/codeql-action/upload-sarif@v1
+        uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: semgrep-report.sarif
         if: always()
       
-      - name: Semgrep PR Comment
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: semgrep-report.sarif
-          github_token: ${{ secrets.TOKEN }}
-          fail_on_error: false
-          tool_name: Semgrep
-          output: github-pr-check
-          levels: note, warning, error
-          traces: always
-          working-directory: .
