@@ -1,0 +1,52 @@
+name: Semgrep CE scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch: {}
+    
+jobs:
+  semgrep:
+    name: semgrep-oss/scan
+    runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep
+
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use .semgrepignore
+        run: |
+          if ! [ -f .semgrepignore ]; then
+            wget -O .semgrepignore https://raw.githubusercontent.com/ArthurHendrich/ShiftLeftSecurity/refs/heads/main/.semgrepignore?token=GHSAT0AAAAAAC3YYXU5CWZH4IUNCR46NFN4Z34AFPQ
+          fi
+          echo semgrep.sarif >> .semgrepignore
+
+      - name: Run Semgrep
+        run: semgrep ci --config auto --sarif > semgrep-report.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep findings
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: semgrep-report.sarif
+        if: always()
+      
+      - name: Semgrep PR Comment
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: semgrep-report.sarif
+          github_token: ${{ secrets.TOKEN }}
+          fail_on_error: false
+          tool_name: Semgrep
+          output: github-pr-check
+          levels: note, warning, error
+          traces: always
+          working-directory: .
