@@ -36,7 +36,7 @@ jobs:
       - name: Run Semgrep
         run: semgrep scan --config auto --sarif > semgrep-report.sarif
 
-      - name: Upload Semgrep findings
+      - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: semgrep-report.sarif
