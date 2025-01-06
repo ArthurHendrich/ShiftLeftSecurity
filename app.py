@@ -23,7 +23,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_secret_key_123'  # Hardcoded secret key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vulnerable.db'  # Using SQLite for development
 app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Insecure upload location
-app.config['DEBUG'] = True  # Exposing debug information
+app.config['DEBUG'] = True  
 
 logging.basicConfig(level=logging.DEBUG)
 

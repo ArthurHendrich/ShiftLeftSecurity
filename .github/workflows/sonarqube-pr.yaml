@@ -30,7 +30,7 @@ jobs:
           coverage xml
 
       - name: Set up Sonar Scanner
-        uses: warchant/setup-sonar-scanner@v3
+        uses: warchant/setup-sonar-scanner@v8
 
       - name: SonarQube PR Analysis
         env:
