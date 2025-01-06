@@ -34,9 +34,7 @@ jobs:
           echo semgrep.sarif >> .semgrepignore
 
       - name: Run Semgrep
-        run: semgrep ci --sarif > semgrep-report.sarif
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: semgrep scan --config auto --suppress-errors --sarif > semgrep-report.sarif
 
       - name: Upload Semgrep findings
         uses: github/codeql-action/upload-sarif@v2

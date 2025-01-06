@@ -45,6 +45,6 @@ jobs:
             -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }}
 
       - name: SonarQube Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
