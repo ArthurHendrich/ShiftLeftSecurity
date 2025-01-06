@@ -7,6 +7,11 @@ on:
     branches: ["main"]
   workflow_dispatch: {}
     
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
   semgrep:
     name: semgrep-oss/scan
@@ -16,10 +21,6 @@ jobs:
       image: semgrep/semgrep
 
     if: (github.actor != 'dependabot[bot]')
-
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Checkout code
