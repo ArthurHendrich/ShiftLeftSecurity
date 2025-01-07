@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch: {}
-    
-permissions:
-  actions: read
-  contents: read
-  security-events: write
 
 jobs:
   semgrep:
@@ -47,10 +42,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Verify Java version
+        run: java -version
+
       - name: Install Sonar Scanner
         run: |
-          apt-get update
-          apt-get install -y unzip
+          sudo apt-get update
+          sudo apt-get install -y unzip
           # Download the latest Sonar Scanner CLI ZIP
           curl -sSLo sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
@@ -68,6 +66,6 @@ jobs:
           sonar-scanner \
             -Dsonar.projectKey=my_project_key \
             -Dsonar.organization=my_org \
-            -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.login=$SONAR_LOGIN \
+            -Dsonar.host.url=https://my-sonarqube-instance \
+            -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.externalIssuesReportPaths=semgrep-report.sarif
