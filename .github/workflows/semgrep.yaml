@@ -49,8 +49,8 @@ jobs:
 
       - name: Install Sonar Scanner
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip
+          apt-get update
+          apt-get install -y unzip
           # Download the latest Sonar Scanner CLI ZIP
           curl -sSLo sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
@@ -68,6 +68,6 @@ jobs:
           sonar-scanner \
             -Dsonar.projectKey=my_project_key \
             -Dsonar.organization=my_org \
-            -Dsonar.host.url=https://my-sonarqube-instance \
-            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_LOGIN \
             -Dsonar.externalIssuesReportPaths=semgrep-report.sarif
