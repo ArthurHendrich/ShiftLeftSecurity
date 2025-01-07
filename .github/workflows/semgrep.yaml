@@ -2,7 +2,7 @@ name: Semgrep + SonarQube
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   semgrep-scan:
@@ -10,31 +10,34 @@ jobs:
     container:
       image: semgrep/semgrep
     steps:
-      - name: Check out repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Run Semgrep scan
-        run: semgrep scan --config auto --sarif > semgrep-report.sarif
+        run: semgrep scan --config auto --sarif --output-file semgrep-report.sarif
 
-      - name: Upload Semgrep SARIF
+      - name: Upload SARIF
         uses: actions/upload-artifact@v3
         with:
           name: semgrep-report.sarif
           path: semgrep-report.sarif
 
   sonarqube-analysis:
-    needs: [semgrep-scan]        
+    needs: semgrep-scan
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Semgrep SARIF
+      - name: Download SARIF artifact
         uses: actions/download-artifact@v3
         with:
           name: semgrep-report.sarif
           path: .
 
+      - name: Print SARIF file for debugging
+        run: cat semgrep-report.sarif
+  
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -62,10 +65,8 @@ jobs:
           SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
         run: |
           source $GITHUB_ENV
-          # If using a self-hosted SonarQube instance:
-          sonar-scanner \
+          sonar-scanner -X \
             -Dsonar.projectKey=my_project_key \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.login=$SONAR_LOGIN \
             -Dsonar.externalIssuesReportPaths=semgrep-report.sarif
-
