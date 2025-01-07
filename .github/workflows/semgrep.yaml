@@ -34,4 +34,20 @@ jobs:
           echo semgrep.sarif >> .semgrepignore
 
       - name: Run Semgrep
-        run: semgrep scan --config auto 
+        run: semgrep scan --config auto --sarif > semgrep-report.sarif
+
+      - name: Prepare SonarQube Analysis
+        run: |
+          echo "Setting up sonar-project.properties"
+          echo "sonar.externalIssuesReportPaths=semgrep-report.sarif" >> sonar-project.properties
+
+      - name: Run SonarQube Scanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=my_project_key \
+            -Dsonar.organization=my_org \
+            -Dsonar.host.url=https://my-sonarqube-instance \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.externalIssuesReportPaths=semgrep-report.sarif
