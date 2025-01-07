@@ -31,14 +31,5 @@ jobs:
         uses: bridgecrewio/checkov-action@master
         with:
           directory: /
-          skip-paths: ".github"
+          skip_path: ".github,usr/local/lib/python3.11"
           quiet: true
-          output_format: cli,sarif
-          output_file_path: console,results.sarif
-
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v2
-        if: failure()
-        with:
-          sarif_file: results.sarif
-      
