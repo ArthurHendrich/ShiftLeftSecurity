@@ -26,26 +26,72 @@ jobs:
           cat > convert.py << 'EOF'
           import json
           import sys
-          
+          from datetime import datetime
+
+          def map_severity(semgrep_severity):
+              # Map Semgrep severity levels to SonarQube severity levels
+              severity_map = {
+                  'ERROR': 'CRITICAL',
+                  'WARNING': 'MAJOR',
+                  'INFO': 'MINOR',
+                  'DEBUG': 'INFO'
+              }
+              return severity_map.get(semgrep_severity.upper(), 'MAJOR')
+
+          def map_type(check_id):
+              # Map Semgrep rule types to SonarQube issue types
+              if any(x in check_id.lower() for x in ['injection', 'xss', 'sqli', 'command']):
+                  return 'VULNERABILITY'
+              elif any(x in check_id.lower() for x in ['secret', 'password', 'key']):
+                  return 'SECURITY_HOTSPOT'
+              elif any(x in check_id.lower() for x in ['bug', 'error']):
+                  return 'BUG'
+              elif any(x in check_id.lower() for x in ['style', 'format']):
+                  return 'CODE_SMELL'
+              return 'VULNERABILITY'  # Default to vulnerability for security focus
+
           def convert_to_sonarqube(semgrep_json):
               issues = []
               
               for finding in semgrep_json.get('results', []):
+                  # Extract metadata
+                  check_id = finding.get('check_id', 'unknown')
+                  extra = finding.get('extra', {})
+                  
+                  # Create issue location
+                  text_range = {
+                      'startLine': finding.get('start', {}).get('line', 1),
+                      'endLine': finding.get('end', {}).get('line', 1),
+                      'startColumn': finding.get('start', {}).get('col', 1),
+                      'endColumn': finding.get('end', {}).get('col', 1)
+                  }
+
+                  # Create rich description with code snippet
+                  description = f"{extra.get('message', '')}\n\n"
+                  if 'lines' in finding:
+                      description += f"```\n{finding['lines']}\n```\n"
+                  if 'metadata' in extra:
+                      description += f"\nReferences:\n"
+                      if 'cwe' in extra['metadata']:
+                          description += f"- CWE: {extra['metadata']['cwe']}\n"
+                      if 'owasp' in extra['metadata']:
+                          description += f"- OWASP: {extra['metadata']['owasp']}\n"
+                      if 'references' in extra['metadata']:
+                          for ref in extra['metadata']['references']:
+                              description += f"- {ref}\n"
+
                   issue = {
                       'engineId': 'SEMGREP',
-                      'ruleId': finding.get('check_id', 'unknown'),
-                      'severity': finding.get('extra', {}).get('severity', 'MAJOR').upper(),
-                      'type': 'VULNERABILITY',
+                      'ruleId': check_id,
+                      'severity': map_severity(extra.get('severity', 'WARNING')),
+                      'type': map_type(check_id),
                       'primaryLocation': {
-                          'message': finding.get('extra', {}).get('message', ''),
+                          'message': description,
                           'filePath': finding.get('path', ''),
-                          'textRange': {
-                              'startLine': finding.get('start', {}).get('line', 1),
-                              'endLine': finding.get('end', {}).get('line', 1),
-                              'startColumn': finding.get('start', {}).get('col', 1),
-                              'endColumn': finding.get('end', {}).get('col', 1)
-                          }
-                      }
+                          'textRange': text_range
+                      },
+                      'effortMinutes': 30,  # Default remediation time
+                      'tags': ['security', 'semgrep'] + extra.get('metadata', {}).get('tags', [])
                   }
                   issues.append(issue)
               
@@ -53,9 +99,11 @@ jobs:
                   'issues': issues
               }
           
+          # Read Semgrep results
           with open('semgrep-results.json', 'r') as f:
               semgrep_data = json.load(f)
           
+          # Convert and save
           sonarqube_data = convert_to_sonarqube(semgrep_data)
           
           with open('semgrep-sonarqube.json', 'w') as f:
