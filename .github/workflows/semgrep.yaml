@@ -52,17 +52,55 @@ jobs:
 
           def convert_to_sonarqube(semgrep_json):
               issues = []
+              file_cache = {}
+              
+              def get_file_lines(filepath):
+                  if filepath not in file_cache:
+                      try:
+                          with open(filepath, 'r') as f:
+                              file_cache[filepath] = f.readlines()
+                      except:
+                          file_cache[filepath] = []
+                  return file_cache[filepath]
+              
+              def adjust_position(filepath, line, column):
+                  lines = get_file_lines(filepath)
+                  if not lines:
+                      return 1, 1
+                  
+                  line = max(1, min(line, len(lines)))
+                  if line > len(lines):
+                      return len(lines), 1
+                  
+                  line_content = lines[line - 1]
+                  column = max(1, min(column, len(line_content) + 1))
+                  return line, column
               
               for finding in semgrep_json.get('results', []):
                   # Extract metadata
                   check_id = finding.get('check_id', 'unknown')
                   extra = finding.get('extra', {})
+                  filepath = finding.get('path', '')
                   
-                  # Safely handle line and column positions
-                  start_line = max(1, finding.get('start', {}).get('line', 1))
-                  end_line = max(start_line, finding.get('end', {}).get('line', start_line))
-                  start_col = max(1, finding.get('start', {}).get('col', 1))
-                  end_col = max(start_col, finding.get('end', {}).get('col', start_col))
+                  # Safely handle line and column positions with file content validation
+                  start_line, start_col = adjust_position(
+                      filepath,
+                      finding.get('start', {}).get('line', 1),
+                      finding.get('start', {}).get('col', 1)
+                  )
+                  
+                  end_line, end_col = adjust_position(
+                      filepath,
+                      finding.get('end', {}).get('line', start_line),
+                      finding.get('end', {}).get('col', start_col)
+                  )
+                  
+                  # Ensure end position is not before start position
+                  if end_line < start_line:
+                      end_line = start_line
+                      end_col = start_col
+                  elif end_line == start_line and end_col < start_col:
+                      end_col = start_col
 
                   # Create issue location
                   text_range = {
@@ -93,7 +131,7 @@ jobs:
                       'type': map_type(check_id),
                       'primaryLocation': {
                           'message': description,
-                          'filePath': finding.get('path', ''),
+                          'filePath': filepath,
                           'textRange': text_range
                       },
                       'effortMinutes': 30,  # Default remediation time
