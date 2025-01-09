@@ -106,11 +106,13 @@ jobs:
       - name: SonarQube Analysis
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           source $GITHUB_ENV
-          sonar-scanner -X \
-            -Dsonar.projectKey=my_project_key \
-            -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.login=$SONAR_LOGIN \
-            -Dsonar.externalIssuesReportPaths=semgrep-sonarqube.json
+          sonar-scanner \
+            -Dsonar.projectKey=ShiftLeftSecurity \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.login=${SONAR_TOKEN} \
+            -Dsonar.externalIssuesReportPaths=semgrep-sonarqube.json \
+            -Dsonar.verbose=true
