@@ -14,13 +14,63 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Semgrep scan
-        run: semgrep scan --config auto --sarif --sarif-output=semgrep-report.sarif
+        run: |
+          # Run semgrep and output both JSON and SARIF
+          semgrep scan --config auto --json --output=semgrep-results.json
+          semgrep scan --config auto --sarif --output=semgrep-report.sarif
 
-      - name: Upload SARIF
+      - name: Convert Semgrep JSON to SonarQube format
+        run: |
+          apt-get update && apt-get install -y python3 python3-pip
+          pip3 install requests
+          cat > convert.py << 'EOF'
+          import json
+          import sys
+          
+          def convert_to_sonarqube(semgrep_json):
+              issues = []
+              
+              for finding in semgrep_json.get('results', []):
+                  issue = {
+                      'engineId': 'SEMGREP',
+                      'ruleId': finding.get('check_id', 'unknown'),
+                      'severity': finding.get('extra', {}).get('severity', 'MAJOR').upper(),
+                      'type': 'VULNERABILITY',
+                      'primaryLocation': {
+                          'message': finding.get('extra', {}).get('message', ''),
+                          'filePath': finding.get('path', ''),
+                          'textRange': {
+                              'startLine': finding.get('start', {}).get('line', 1),
+                              'endLine': finding.get('end', {}).get('line', 1),
+                              'startColumn': finding.get('start', {}).get('col', 1),
+                              'endColumn': finding.get('end', {}).get('col', 1)
+                          }
+                      }
+                  }
+                  issues.append(issue)
+              
+              return {
+                  'issues': issues
+              }
+          
+          with open('semgrep-results.json', 'r') as f:
+              semgrep_data = json.load(f)
+          
+          sonarqube_data = convert_to_sonarqube(semgrep_data)
+          
+          with open('semgrep-sonarqube.json', 'w') as f:
+              json.dump(sonarqube_data, f, indent=2)
+          EOF
+          
+          python3 convert.py
+
+      - name: Upload results
         uses: actions/upload-artifact@v3
         with:
-          name: semgrep-report.sarif
-          path: semgrep-report.sarif
+          name: semgrep-results
+          path: |
+            semgrep-report.sarif
+            semgrep-sonarqube.json
 
   sonarqube-analysis:
     needs: semgrep-scan
@@ -29,23 +79,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download SARIF artifact
+      - name: Download scan results
         uses: actions/download-artifact@v3
         with:
-          name: semgrep-report.sarif
+          name: semgrep-results
           path: .
 
-      - name: Print SARIF file for debugging
-        run: cat semgrep-report.sarif
-  
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Verify Java version
-        run: java -version
 
       - name: Install Sonar Scanner
         run: |
@@ -69,4 +113,4 @@ jobs:
             -Dsonar.projectKey=my_project_key \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.login=$SONAR_LOGIN \
-            -Dsonar.externalIssuesReportPaths=semgrep-report.sarif
+            -Dsonar.externalIssuesReportPaths=semgrep-sonarqube.json
