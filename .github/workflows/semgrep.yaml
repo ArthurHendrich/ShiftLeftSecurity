@@ -58,12 +58,18 @@ jobs:
                   check_id = finding.get('check_id', 'unknown')
                   extra = finding.get('extra', {})
                   
+                  # Safely handle line and column positions
+                  start_line = max(1, finding.get('start', {}).get('line', 1))
+                  end_line = max(start_line, finding.get('end', {}).get('line', start_line))
+                  start_col = max(1, finding.get('start', {}).get('col', 1))
+                  end_col = max(start_col, finding.get('end', {}).get('col', start_col))
+
                   # Create issue location
                   text_range = {
-                      'startLine': finding.get('start', {}).get('line', 1),
-                      'endLine': finding.get('end', {}).get('line', 1),
-                      'startColumn': finding.get('start', {}).get('col', 1),
-                      'endColumn': finding.get('end', {}).get('col', 1)
+                      'startLine': start_line,
+                      'endLine': end_line,
+                      'startColumn': start_col,
+                      'endColumn': end_col
                   }
 
                   # Create rich description with code snippet
