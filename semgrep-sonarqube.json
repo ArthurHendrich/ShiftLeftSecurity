@@ -1,0 +1,882 @@
+{
+  "rules": [
+    {
+      "id": "dockerfile.security.last-user-is-root.last-user-is-root",
+      "name": "Last User Is Root",
+      "description": "The last user in the container is 'root'. This is a security hazard because if an attacker gains control of the container they will have root access. Switch back to another user after running commands as 'root'.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_SECRET_KEY",
+      "name": "Avoid Hardcoded Config Secret Key",
+      "description": "Hardcoded variable `SECRET_KEY` detected. Use environment variables or config files instead",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_DEBUG",
+      "name": "Avoid Hardcoded Config Debug",
+      "description": "Hardcoded variable `DEBUG` detected. Set this by using FLASK_DEBUG environment variable",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.open-redirect.open-redirect",
+      "name": "Open Redirect",
+      "description": "Data from request is passed to redirect(). This is an open redirect and could be exploited. Consider using 'url_for()' to generate links to known locations. If you must use a URL to unknown pages, consider using 'urlparse()' or similar and checking if the 'netloc' property is the same as your site's host name. See the references for more information.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.insecure-deserialization.insecure-deserialization",
+      "name": "Insecure Deserialization",
+      "description": "Detected the use of an insecure deserialization library in a Flask route. These libraries are prone to code execution vulnerabilities. Ensure user data does not enter this function. To fix this, try to avoid serializing whole objects. Consider instead using a serializer such as JSON.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.lang.security.deserialization.avoid-pyyaml-load.avoid-pyyaml-load",
+      "name": "Avoid Pyyaml Load",
+      "description": "Detected a possible YAML deserialization vulnerability. `yaml.unsafe_load`, `yaml.Loader`, `yaml.CLoader`, and `yaml.UnsafeLoader` are all known to be unsafe methods of deserializing YAML. An attacker with control over the YAML input could create special YAML input that allows the attacker to run arbitrary Python code. This would allow the attacker to steal files, download and install malware, or otherwise take over the machine. Use `yaml.safe_load` or `yaml.SafeLoader` instead.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.django.security.injection.ssrf.ssrf-injection-requests.ssrf-injection-requests",
+      "name": "Ssrf Injection Requests",
+      "description": "Data from request object is passed to a new server-side request. This could lead to a server-side request forgery (SSRF). To mitigate, ensure that schemes and hosts are validated against an allowlist, do not forward the response to the user, and ensure proper authentication and transport-layer security in the proxied request. See https://owasp.org/www-community/attacks/Server_Side_Request_Forgery to learn more about SSRF vulnerabilities.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.injection.ssrf-requests.ssrf-requests",
+      "name": "Ssrf Requests",
+      "description": "Data from request object is passed to a new server-side request. This could lead to a server-side request forgery (SSRF). To mitigate, ensure that schemes and hosts are validated against an allowlist, do not forward the response to the user, and ensure proper authentication and transport-layer security in the proxied request.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.requests.security.disabled-cert-validation.disabled-cert-validation",
+      "name": "Disabled Cert Validation",
+      "description": "Certificate verification has been explicitly disabled. This permits insecure connections to insecure servers. Re-enable certification validation.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.jwt.security.jwt-none-alg.jwt-python-none-alg",
+      "name": "Jwt Python None Alg",
+      "description": "Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host",
+      "name": "Avoid App Run With Bad Host",
+      "description": "Running flask app with host 0.0.0.0 could expose the server publicly.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "CRITICAL",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "python.flask.security.audit.debug-enabled.debug-enabled",
+      "name": "Debug Enabled",
+      "description": "Detected Flask app with debug=True. Do not deploy to production with this flag enabled as it will leak sensitive information. Instead, consider using Flask configuration variables or setting 'debug' using system environment variables.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "CRITICAL",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "yaml.docker-compose.security.privileged-service.privileged-service",
+      "name": "Privileged Service",
+      "description": "Service 'web' is running in privileged mode. This grants the container the equivalent of root capabilities on the host machine. This can lead to container escapes, privilege escalation, and other security concerns. Remove the 'privileged' key to disable this capability.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "CRITICAL",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "yaml.docker-compose.security.no-new-privileges.no-new-privileges",
+      "name": "No New Privileges",
+      "description": "Service 'db' allows for privilege escalation via setuid or setgid binaries. Add 'no-new-privileges:true' in 'security_opt' to prevent this.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
+      "name": "Writable Filesystem Service",
+      "description": "Service 'db' is running with a writable root filesystem. This may allow malicious applications to download and run additional payloads, or modify container files. If an application inside a container has to save something temporarily consider using a tmpfs. Add 'read_only: true' to this service to prevent this.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "yaml.kubernetes.security.privileged-container.privileged-container",
+      "name": "Privileged Container",
+      "description": "Container or pod is running in privileged mode. This grants the container the equivalent of root capabilities on the host machine. This can lead to container escapes, privilege escalation, and other security concerns. Remove the 'privileged' key to disable this capability.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "yaml.kubernetes.security.allow-privilege-escalation-true.allow-privilege-escalation-true",
+      "name": "Allow Privilege Escalation True",
+      "description": "In Kubernetes, each pod runs in its own isolated environment with its own  set of security policies. However, certain container images may contain  `setuid` or `setgid` binaries that could allow an attacker to perform  privilege escalation and gain access to sensitive resources. To mitigate  this risk, it's recommended to add a `securityContext` to the container in  the pod, with the parameter `allowPrivilegeEscalation` set to `false`.  This will prevent the container from running any privileged processes and  limit the impact of any potential attacks.  In the container `vulnerable-app` this parameter is set to `true` which makes this container much more vulnerable to privelege escalation attacks.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "generic.secrets.security.detected-sonarqube-docs-api-key.detected-sonarqube-docs-api-key",
+      "name": "Detected Sonarqube Docs Api Key",
+      "description": "SonarQube Docs API Key detected",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "javascript.browser.security.insecure-document-method.insecure-document-method",
+      "name": "Insecure Document Method",
+      "description": "User controlled data in methods like `innerHTML`, `outerHTML` or `document.write` is an anti-pattern that can lead to XSS vulnerabilities",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "id": "html.security.audit.missing-integrity.missing-integrity",
+      "name": "Missing Integrity",
+      "description": "This tag is missing an 'integrity' subresource integrity attribute. The 'integrity' attribute allows for the browser to verify that externally hosted files (for example from a CDN) are delivered without unexpected manipulation. Without this attribute, if an attacker can modify the externally hosted resource, this could lead to XSS and other types of attacks. To prevent this, include the base64-encoded cryptographic hash of the resource (file) you\u2019re telling the browser to fetch in the 'integrity' attribute for all externally hosted files.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "python.django.security.django-no-csrf-token.django-no-csrf-token",
+      "name": "Django No Csrf Token",
+      "description": "Manually-created forms in django templates should specify a csrf_token to prevent CSRF attacks.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    },
+    {
+      "id": "python.lang.security.audit.md5-used-as-password.md5-used-as-password",
+      "name": "Md5 Used As Password",
+      "description": "It looks like MD5 is used as a password hash. MD5 is not considered a secure password hash because it can be cracked by an attacker in a short amount of time. Use a suitable password hashing function such as scrypt. You can use `hashlib.scrypt`.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "MAJOR",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "MEDIUM"
+        }
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "ruleId": "dockerfile.security.last-user-is-root.last-user-is-root",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "The last user in the container is 'root'. This is a security hazard because if an attacker gains control of the container they will have root access. Switch back to another user after running commands as 'root'.",
+        "filePath": "Dockerfile",
+        "textRange": {
+          "startLine": 9,
+          "startColumn": 1,
+          "endLine": 9,
+          "endColumn": 9
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-269",
+        "owasp-a04"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_SECRET_KEY",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Hardcoded variable `SECRET_KEY` detected. Use environment variables or config files instead",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 23,
+          "startColumn": 1,
+          "endLine": 23,
+          "endColumn": 50
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-489",
+        "owasp-a05"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_DEBUG",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Hardcoded variable `DEBUG` detected. Set this by using FLASK_DEBUG environment variable",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 26,
+          "startColumn": 1,
+          "endLine": 26,
+          "endColumn": 27
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-489",
+        "owasp-a05"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.open-redirect.open-redirect",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Data from request is passed to redirect(). This is an open redirect and could be exploited. Consider using 'url_for()' to generate links to known locations. If you must use a URL to unknown pages, consider using 'urlparse()' or similar and checking if the 'netloc' property is the same as your site's host name. See the references for more information.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 99,
+          "startColumn": 20,
+          "endLine": 99,
+          "endColumn": 40
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-601",
+        "owasp-a01"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.insecure-deserialization.insecure-deserialization",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Detected the use of an insecure deserialization library in a Flask route. These libraries are prone to code execution vulnerabilities. Ensure user data does not enter this function. To fix this, try to avoid serializing whole objects. Consider instead using a serializer such as JSON.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 114,
+          "startColumn": 20,
+          "endLine": 114,
+          "endColumn": 55
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-502",
+        "owasp-a08",
+        "owasp-a08"
+      ]
+    },
+    {
+      "ruleId": "python.lang.security.deserialization.avoid-pyyaml-load.avoid-pyyaml-load",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Detected a possible YAML deserialization vulnerability. `yaml.unsafe_load`, `yaml.Loader`, `yaml.CLoader`, and `yaml.UnsafeLoader` are all known to be unsafe methods of deserializing YAML. An attacker with control over the YAML input could create special YAML input that allows the attacker to run arbitrary Python code. This would allow the attacker to steal files, download and install malware, or otherwise take over the machine. Use `yaml.safe_load` or `yaml.SafeLoader` instead.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 114,
+          "startColumn": 20,
+          "endLine": 114,
+          "endColumn": 55
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-502",
+        "owasp-a08",
+        "owasp-a08"
+      ]
+    },
+    {
+      "ruleId": "python.django.security.injection.ssrf.ssrf-injection-requests.ssrf-injection-requests",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Data from request object is passed to a new server-side request. This could lead to a server-side request forgery (SSRF). To mitigate, ensure that schemes and hosts are validated against an allowlist, do not forward the response to the user, and ensure proper authentication and transport-layer security in the proxied request. See https://owasp.org/www-community/attacks/Server_Side_Request_Forgery to learn more about SSRF vulnerabilities.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 127,
+          "startColumn": 5,
+          "endLine": 128,
+          "endColumn": 46
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-918",
+        "owasp-a10"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.injection.ssrf-requests.ssrf-requests",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Data from request object is passed to a new server-side request. This could lead to a server-side request forgery (SSRF). To mitigate, ensure that schemes and hosts are validated against an allowlist, do not forward the response to the user, and ensure proper authentication and transport-layer security in the proxied request.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 128,
+          "startColumn": 16,
+          "endLine": 128,
+          "endColumn": 46
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-918",
+        "owasp-a10"
+      ]
+    },
+    {
+      "ruleId": "python.requests.security.disabled-cert-validation.disabled-cert-validation",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Certificate verification has been explicitly disabled. This permits insecure connections to insecure servers. Re-enable certification validation.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 128,
+          "startColumn": 16,
+          "endLine": 128,
+          "endColumn": 46
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-295",
+        "owasp-a03",
+        "owasp-a07"
+      ]
+    },
+    {
+      "ruleId": "python.jwt.security.jwt-none-alg.jwt-python-none-alg",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Detected use of the 'none' algorithm in a JWT token. The 'none' algorithm assumes the integrity of the token has already been verified. This would allow a malicious actor to forge a JWT token that will automatically be verified. Do not explicitly use the 'none' algorithm. Instead, use an algorithm such as 'HS256'.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 135,
+          "startColumn": 12,
+          "endLine": 135,
+          "endColumn": 54
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-327",
+        "owasp-a03",
+        "owasp-a02"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Running flask app with host 0.0.0.0 could expose the server publicly.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 203,
+          "startColumn": 5,
+          "endLine": 203,
+          "endColumn": 50
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-668",
+        "owasp-a01"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.audit.debug-enabled.debug-enabled",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Detected Flask app with debug=True. Do not deploy to production with this flag enabled as it will leak sensitive information. Instead, consider using Flask configuration variables or setting 'debug' using system environment variables.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 203,
+          "startColumn": 5,
+          "endLine": 203,
+          "endColumn": 50
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-489",
+        "owasp-a06"
+      ]
+    },
+    {
+      "ruleId": "yaml.docker-compose.security.privileged-service.privileged-service",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Service 'web' is running in privileged mode. This grants the container the equivalent of root capabilities on the host machine. This can lead to container escapes, privilege escalation, and other security concerns. Remove the 'privileged' key to disable this capability.",
+        "filePath": "docker-compose.yml",
+        "textRange": {
+          "startLine": 18,
+          "startColumn": 17,
+          "endLine": 18,
+          "endColumn": 20
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-250",
+        "owasp-a06",
+        "owasp-a05"
+      ]
+    },
+    {
+      "ruleId": "yaml.docker-compose.security.no-new-privileges.no-new-privileges",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Service 'db' allows for privilege escalation via setuid or setgid binaries. Add 'no-new-privileges:true' in 'security_opt' to prevent this.",
+        "filePath": "docker-compose.yml",
+        "textRange": {
+          "startLine": 22,
+          "startColumn": 3,
+          "endLine": 22,
+          "endColumn": 5
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-732",
+        "owasp-a05",
+        "owasp-a06"
+      ]
+    },
+    {
+      "ruleId": "yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Service 'db' is running with a writable root filesystem. This may allow malicious applications to download and run additional payloads, or modify container files. If an application inside a container has to save something temporarily consider using a tmpfs. Add 'read_only: true' to this service to prevent this.",
+        "filePath": "docker-compose.yml",
+        "textRange": {
+          "startLine": 22,
+          "startColumn": 3,
+          "endLine": 22,
+          "endColumn": 5
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-732",
+        "owasp-a05",
+        "owasp-a06"
+      ]
+    },
+    {
+      "ruleId": "yaml.kubernetes.security.privileged-container.privileged-container",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Container or pod is running in privileged mode. This grants the container the equivalent of root capabilities on the host machine. This can lead to container escapes, privilege escalation, and other security concerns. Remove the 'privileged' key to disable this capability.",
+        "filePath": "k8s/deployment.yaml",
+        "textRange": {
+          "startLine": 20,
+          "startColumn": 9,
+          "endLine": 40,
+          "endColumn": 26
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-250"
+      ]
+    },
+    {
+      "ruleId": "yaml.kubernetes.security.allow-privilege-escalation-true.allow-privilege-escalation-true",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "In Kubernetes, each pod runs in its own isolated environment with its own  set of security policies. However, certain container images may contain  `setuid` or `setgid` binaries that could allow an attacker to perform  privilege escalation and gain access to sensitive resources. To mitigate  this risk, it's recommended to add a `securityContext` to the container in  the pod, with the parameter `allowPrivilegeEscalation` set to `false`.  This will prevent the container from running any privileged processes and  limit the impact of any potential attacks.  In the container `vulnerable-app` this parameter is set to `true` which makes this container much more vulnerable to privelege escalation attacks.",
+        "filePath": "k8s/deployment.yaml",
+        "textRange": {
+          "startLine": 25,
+          "startColumn": 37,
+          "endLine": 25,
+          "endColumn": 40
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-732",
+        "owasp-a05",
+        "owasp-a06"
+      ]
+    },
+    {
+      "ruleId": "python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Running flask app with host 0.0.0.0 could expose the server publicly.",
+        "filePath": "main.py",
+        "textRange": {
+          "startLine": 4,
+          "startColumn": 5,
+          "endLine": 4,
+          "endColumn": 50
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-668",
+        "owasp-a01"
+      ]
+    },
+    {
+      "ruleId": "generic.secrets.security.detected-sonarqube-docs-api-key.detected-sonarqube-docs-api-key",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "SonarQube Docs API Key detected",
+        "filePath": "sonar-project.properties",
+        "textRange": {
+          "startLine": 7,
+          "startColumn": 1,
+          "endLine": 7,
+          "endColumn": 56
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-798",
+        "owasp-a07"
+      ]
+    },
+    {
+      "ruleId": "javascript.browser.security.insecure-document-method.insecure-document-method",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "User controlled data in methods like `innerHTML`, `outerHTML` or `document.write` is an anti-pattern that can lead to XSS vulnerabilities",
+        "filePath": "static/js/main.js",
+        "textRange": {
+          "startLine": 10,
+          "startColumn": 21,
+          "endLine": 18,
+          "endColumn": 22
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-79",
+        "owasp-a07",
+        "owasp-a03"
+      ]
+    },
+    {
+      "ruleId": "html.security.audit.missing-integrity.missing-integrity",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "This tag is missing an 'integrity' subresource integrity attribute. The 'integrity' attribute allows for the browser to verify that externally hosted files (for example from a CDN) are delivered without unexpected manipulation. Without this attribute, if an attacker can modify the externally hosted resource, this could lead to XSS and other types of attacks. To prevent this, include the base64-encoded cryptographic hash of the resource (file) you\u2019re telling the browser to fetch in the 'integrity' attribute for all externally hosted files.",
+        "filePath": "templates/base.html",
+        "textRange": {
+          "startLine": 6,
+          "startColumn": 5,
+          "endLine": 6,
+          "endColumn": 98
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-353",
+        "owasp-a08"
+      ]
+    },
+    {
+      "ruleId": "html.security.audit.missing-integrity.missing-integrity",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "This tag is missing an 'integrity' subresource integrity attribute. The 'integrity' attribute allows for the browser to verify that externally hosted files (for example from a CDN) are delivered without unexpected manipulation. Without this attribute, if an attacker can modify the externally hosted resource, this could lead to XSS and other types of attacks. To prevent this, include the base64-encoded cryptographic hash of the resource (file) you\u2019re telling the browser to fetch in the 'integrity' attribute for all externally hosted files.",
+        "filePath": "templates/base.html",
+        "textRange": {
+          "startLine": 31,
+          "startColumn": 5,
+          "endLine": 31,
+          "endColumn": 71
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-353",
+        "owasp-a08"
+      ]
+    },
+    {
+      "ruleId": "html.security.audit.missing-integrity.missing-integrity",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "This tag is missing an 'integrity' subresource integrity attribute. The 'integrity' attribute allows for the browser to verify that externally hosted files (for example from a CDN) are delivered without unexpected manipulation. Without this attribute, if an attacker can modify the externally hosted resource, this could lead to XSS and other types of attacks. To prevent this, include the base64-encoded cryptographic hash of the resource (file) you\u2019re telling the browser to fetch in the 'integrity' attribute for all externally hosted files.",
+        "filePath": "templates/base.html",
+        "textRange": {
+          "startLine": 32,
+          "startColumn": 5,
+          "endLine": 32,
+          "endColumn": 104
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-353",
+        "owasp-a08"
+      ]
+    },
+    {
+      "ruleId": "python.django.security.django-no-csrf-token.django-no-csrf-token",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Manually-created forms in django templates should specify a csrf_token to prevent CSRF attacks.",
+        "filePath": "templates/login.html",
+        "textRange": {
+          "startLine": 6,
+          "startColumn": 9,
+          "endLine": 16,
+          "endColumn": 15
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-352"
+      ]
+    },
+    {
+      "ruleId": "python.django.security.django-no-csrf-token.django-no-csrf-token",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Manually-created forms in django templates should specify a csrf_token to prevent CSRF attacks.",
+        "filePath": "templates/register.html",
+        "textRange": {
+          "startLine": 6,
+          "startColumn": 9,
+          "endLine": 20,
+          "endColumn": 15
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-352"
+      ]
+    },
+    {
+      "ruleId": "python.django.security.django-no-csrf-token.django-no-csrf-token",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Manually-created forms in django templates should specify a csrf_token to prevent CSRF attacks.",
+        "filePath": "templates/upload.html",
+        "textRange": {
+          "startLine": 5,
+          "startColumn": 5,
+          "endLine": 10,
+          "endColumn": 11
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-352"
+      ]
+    },
+    {
+      "ruleId": "python.lang.security.audit.md5-used-as-password.md5-used-as-password",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "It looks like MD5 is used as a password hash. MD5 is not considered a secure password hash because it can be cracked by an attacker in a short amount of time. Use a suitable password hashing function such as scrypt. You can use `hashlib.scrypt`.",
+        "filePath": "utils.py",
+        "textRange": {
+          "startLine": 6,
+          "startColumn": 12,
+          "endLine": 6,
+          "endColumn": 53
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-327",
+        "owasp-a03",
+        "owasp-a02"
+      ]
+    }
+  ]
+}

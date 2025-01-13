@@ -1,0 +1,41 @@
+{
+  "rules": [
+    {
+      "id": "python.flask.security.open-redirect.open-redirect",
+      "name": "Open Redirect in Flask Application",
+      "description": "Detects instances where data from a request is passed to redirect(), potentially leading to open redirect vulnerabilities.",
+      "engineId": "semgrep",
+      "cleanCodeAttribute": "TRUSTWORTHY",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [
+        {
+          "softwareQuality": "SECURITY",
+          "severity": "HIGH"
+        }
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "ruleId": "python.flask.security.open-redirect.open-redirect",
+      "effortMinutes": 30,
+      "primaryLocation": {
+        "message": "Data from request is passed to redirect(), leading to an open redirect vulnerability. Consider using 'url_for()' to generate links to known locations.",
+        "filePath": "app.py",
+        "textRange": {
+          "startLine": 99,
+          "startColumn": 20,
+          "endLine": 99,
+          "endColumn": 40
+        }
+      },
+      "secondaryLocations": [],
+      "tags": [
+        "security",
+        "cwe-601",
+        "owasp-a01"
+      ]
+    }
+  ]
+}

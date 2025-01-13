@@ -23,138 +23,226 @@ jobs:
         run: |
           apt-get update && apt-get install -y python3 python3-pip
           pip3 install requests
-          cat > convert.py << 'EOF'
-          import json
-          import sys
-          from datetime import datetime
+          cat > convert_semgrep_to_sonarqube.py << 'EOF'
+#!/usr/bin/env python3
+import json
+import sys
+from typing import Dict, List, Optional
+import os
 
-          def map_severity(semgrep_severity):
-              # Map Semgrep severity levels to SonarQube severity levels
-              severity_map = {
-                  'ERROR': 'CRITICAL',
-                  'WARNING': 'MAJOR',
-                  'INFO': 'MINOR',
-                  'DEBUG': 'INFO'
-              }
-              return severity_map.get(semgrep_severity.upper(), 'MAJOR')
+def debug_print(msg: str, data=None):
+    """Print debug information"""
+    print(f"DEBUG: {msg}", file=sys.stderr)
+    if data is not None:
+        print(f"DATA: {json.dumps(data, indent=2)}", file=sys.stderr)
 
-          def map_type(check_id):
-              # Map Semgrep rule types to SonarQube issue types
-              if any(x in check_id.lower() for x in ['injection', 'xss', 'sqli', 'command']):
-                  return 'VULNERABILITY'
-              elif any(x in check_id.lower() for x in ['secret', 'password', 'key']):
-                  return 'SECURITY_HOTSPOT'
-              elif any(x in check_id.lower() for x in ['bug', 'error']):
-                  return 'BUG'
-              elif any(x in check_id.lower() for x in ['style', 'format']):
-                  return 'CODE_SMELL'
-              return 'VULNERABILITY'  # Default to vulnerability for security focus
+def map_severity_with_confidence(severity: str, confidence: str) -> str:
+    """Map Semgrep severity levels to SonarQube severity levels, considering confidence."""
+    # Base severity mapping
+    severity_map = {
+        "ERROR": "BLOCKER",
+        "WARNING": "CRITICAL",
+        "INFO": "MAJOR",
+        "DEBUG": "MINOR"
+    }
+    
+    # Adjust severity based on confidence
+    confidence = confidence.upper()
+    base_severity = severity_map.get(severity.upper(), "MAJOR")
+    debug_print(f"Mapping severity: {severity} with confidence: {confidence} to base: {base_severity}")
+    
+    if confidence == "LOW":
+        # Reduce severity by one level if confidence is low
+        severity_levels = ["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"]
+        try:
+            current_index = severity_levels.index(base_severity)
+            adjusted = severity_levels[min(current_index + 1, len(severity_levels) - 1)]
+            debug_print(f"Adjusted severity due to low confidence: {adjusted}")
+            return adjusted
+        except ValueError:
+            debug_print(f"Using default MAJOR severity due to ValueError")
+            return "MAJOR"  # Default to MAJOR if severity level not found
+    
+    return base_severity
 
-          def convert_to_sonarqube(semgrep_json):
-              issues = []
-              file_cache = {}
-              
-              def get_file_lines(filepath):
-                  if filepath not in file_cache:
-                      try:
-                          with open(filepath, 'r') as f:
-                              file_cache[filepath] = f.readlines()
-                      except:
-                          file_cache[filepath] = []
-                  return file_cache[filepath]
-              
-              def adjust_position(filepath, line, column):
-                  lines = get_file_lines(filepath)
-                  if not lines:
-                      return 1, 1
-                  
-                  line = max(1, min(line, len(lines)))
-                  if line > len(lines):
-                      return len(lines), 1
-                  
-                  line_content = lines[line - 1]
-                  column = max(1, min(column, len(line_content) + 1))
-                  return line, column
-              
-              for finding in semgrep_json.get('results', []):
-                  # Extract metadata
-                  check_id = finding.get('check_id', 'unknown')
-                  extra = finding.get('extra', {})
-                  filepath = finding.get('path', '')
-                  
-                  # Safely handle line and column positions with file content validation
-                  start_line, start_col = adjust_position(
-                      filepath,
-                      finding.get('start', {}).get('line', 1),
-                      finding.get('start', {}).get('col', 1)
-                  )
-                  
-                  end_line, end_col = adjust_position(
-                      filepath,
-                      finding.get('end', {}).get('line', start_line),
-                      finding.get('end', {}).get('col', start_col)
-                  )
-                  
-                  # Ensure end position is not before start position
-                  if end_line < start_line:
-                      end_line = start_line
-                      end_col = start_col
-                  elif end_line == start_line and end_col < start_col:
-                      end_col = start_col
+def map_type(metadata: Dict) -> str:
+    """Map Semgrep rule types to SonarQube issue types based on metadata."""
+    # Check for security-related indicators
+    if metadata.get("cwe") or metadata.get("owasp"):
+        debug_print("Mapped to SECURITY_HOTSPOT due to CWE/OWASP")
+        return "SECURITY_HOTSPOT"
+    
+    category = metadata.get("category", "").lower()
+    subcategory = metadata.get("subcategory", [])
+    if isinstance(subcategory, list):
+        subcategory = [s.lower() for s in subcategory]
+    else:
+        subcategory = [subcategory.lower()]
+    
+    debug_print(f"Mapping type with category: {category}, subcategory: {subcategory}")
+    
+    # Security-related categorization
+    if (category == "security" or 
+        any(s in subcategory for s in ["vuln", "audit"]) or
+        metadata.get("vulnerability_class")):
+        debug_print("Mapped to VULNERABILITY due to security indicators")
+        return "VULNERABILITY"
+    
+    # Bug categorization
+    if "bug" in category or "error" in category:
+        debug_print("Mapped to BUG due to category")
+        return "BUG"
+    
+    debug_print("Defaulting to CODE_SMELL")
+    return "CODE_SMELL"
 
-                  # Create issue location
-                  text_range = {
-                      'startLine': start_line,
-                      'endLine': end_line,
-                      'startColumn': start_col,
-                      'endColumn': end_col
-                  }
+def create_sonarqube_issue(finding: Dict) -> Dict:
+    """Convert a Semgrep finding to SonarQube Generic Issue format."""
+    debug_print("Processing finding:", finding)
+    
+    metadata = finding.get("extra", {}).get("metadata", {})
+    extra = finding.get("extra", {})
+    
+    # Build detailed description with confidence level
+    description = extra.get("message", "")
+    confidence = metadata.get("confidence", "MEDIUM")
+    description = f"[Confidence: {confidence}]\n\n{description}"
+    
+    if metadata.get("cwe"):
+        description += f"\n\nCWE: {', '.join(metadata['cwe'])}"
+    if metadata.get("owasp"):
+        description += f"\n\nOWASP: {', '.join(metadata['owasp'])}"
+    if metadata.get("references"):
+        description += "\n\nReferences:\n" + "\n".join(f"- {ref}" for ref in metadata["references"])
 
-                  # Create rich description with code snippet
-                  description = f"{extra.get('message', '')}\n\n"
-                  if 'lines' in finding:
-                      description += f"```\n{finding['lines']}\n```\n"
-                  if 'metadata' in extra:
-                      description += f"\nReferences:\n"
-                      if 'cwe' in extra['metadata']:
-                          description += f"- CWE: {extra['metadata']['cwe']}\n"
-                      if 'owasp' in extra['metadata']:
-                          description += f"- OWASP: {extra['metadata']['owasp']}\n"
-                      if 'references' in extra['metadata']:
-                          for ref in extra['metadata']['references']:
-                              description += f"- {ref}\n"
+    # Create unique engine ID and rule ID
+    engine_id = "semgrep"
+    rule_id = finding["check_id"]
 
-                  issue = {
-                      'engineId': 'SEMGREP',
-                      'ruleId': check_id,
-                      'severity': map_severity(extra.get('severity', 'WARNING')),
-                      'type': map_type(check_id),
-                      'primaryLocation': {
-                          'message': description,
-                          'filePath': filepath,
-                          'textRange': text_range
-                      },
-                      'effortMinutes': 30,  # Default remediation time
-                      'tags': ['security', 'semgrep'] + extra.get('metadata', {}).get('tags', [])
-                  }
-                  issues.append(issue)
-              
-              return {
-                  'issues': issues
-              }
+    # Build tags
+    tags = ["security"]
+    if metadata.get("confidence"):
+        tags.append(f"confidence:{metadata['confidence'].lower()}")
+    if metadata.get("cwe"):
+        tags.extend([f"cwe-{cwe.split(':')[0].split()[0]}" for cwe in metadata["cwe"]])
+    if metadata.get("owasp"):
+        tags.extend([f"owasp-{owasp.split(':')[0].strip()}" for owasp in metadata["owasp"]])
+    if metadata.get("category"):
+        tags.append(metadata["category"].lower())
+
+    # Get file content to validate column positions
+    try:
+        filepath = os.path.abspath(finding["path"])
+        debug_print(f"Reading file: {filepath}")
+        with open(filepath, "r") as f:
+            lines = f.readlines()
+        
+        start_line = max(1, min(finding["start"]["line"], len(lines)))
+        end_line = max(1, min(finding["end"]["line"], len(lines)))
+        
+        # Ensure we're using valid line numbers
+        if start_line > len(lines):
+            start_line = len(lines)
+        if end_line > len(lines):
+            end_line = len(lines)
+            
+        # Get the actual line content
+        start_line_content = lines[start_line - 1].rstrip('\n\r')
+        end_line_content = lines[end_line - 1].rstrip('\n\r')
+        
+        # Ensure column positions are within bounds
+        start_col = max(1, min(finding["start"].get("col", 1), len(start_line_content)))
+        end_col = max(start_col, min(finding["end"].get("col", len(end_line_content)), len(end_line_content)))
+        
+        debug_print(f"Position info - start_line: {start_line}, end_line: {end_line}, start_col: {start_col}, end_col: {end_col}")
+        
+    except Exception as e:
+        debug_print(f"Error processing file positions: {str(e)}")
+        start_line = finding["start"]["line"]
+        end_line = finding["end"]["line"]
+        start_col = 1
+        end_col = 1
+
+    issue_type = map_type(metadata)
+    severity = map_severity_with_confidence(
+        extra.get("severity", "WARNING"),
+        metadata.get("confidence", "MEDIUM")
+    )
+
+    # Using the new SonarQube format
+    issue = {
+        "ruleId": f"{engine_id}:{rule_id}",
+        "type": issue_type,
+        "severity": severity,
+        "effortMinutes": 30,  # Default effort estimation
+        "mainLocation": {
+            "message": description,
+            "filePath": finding["path"],
+            "textRange": {
+                "startLine": start_line,
+                "endLine": end_line,
+                "startColumn": start_col,
+                "endColumn": end_col
+            }
+        },
+        "tags": tags
+    }
+    
+    debug_print("Created issue:", issue)
+    return issue
+
+def convert_to_sonarqube(semgrep_json: Dict) -> Dict:
+    """Convert Semgrep JSON output to SonarQube Generic Issue format."""
+    debug_print("Starting conversion of Semgrep results")
+    debug_print(f"Input contains {len(semgrep_json.get('results', []))} findings")
+    
+    sonarqube_issues = []
+    
+    for finding in semgrep_json.get("results", []):
+        try:
+            issue = create_sonarqube_issue(finding)
+            sonarqube_issues.append(issue)
+        except Exception as e:
+            debug_print(f"Error converting finding: {str(e)}")
+            continue
+    
+    result = {"issues": sonarqube_issues}
+    debug_print(f"Conversion complete. Generated {len(sonarqube_issues)} issues")
+    return result
+
+def main():
+    try:
+        debug_print("Starting conversion process")
+        debug_print(f"Current working directory: {os.getcwd()}")
+        
+        input_file = "semgrep-results.json"
+        output_file = "semgrep-sonarqube.json"
+        
+        debug_print(f"Reading input file: {input_file}")
+        with open(input_file) as f:
+            semgrep_data = json.load(f)
+        
+        sonarqube_data = convert_to_sonarqube(semgrep_data)
+        
+        debug_print(f"Writing output file: {output_file}")
+        with open(output_file, "w") as f:
+            json.dump(sonarqube_data, f, indent=2)
+        
+        print(f"Successfully converted {len(sonarqube_data['issues'])} issues to SonarQube format")
+        
+        # Print the first issue as an example
+        if sonarqube_data['issues']:
+            debug_print("Example of first converted issue:", sonarqube_data['issues'][0])
+            
+    except Exception as e:
+        debug_print(f"Error: {str(e)}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main() 
+EOF
           
-          # Read Semgrep results
-          with open('semgrep-results.json', 'r') as f:
-              semgrep_data = json.load(f)
-          
-          # Convert and save
-          sonarqube_data = convert_to_sonarqube(semgrep_data)
-          
-          with open('semgrep-sonarqube.json', 'w') as f:
-              json.dump(sonarqube_data, f, indent=2)
-          EOF
-          
-          python3 convert.py
+          python3 convert_semgrep_to_sonarqube.py
 
       - name: Upload results
         uses: actions/upload-artifact@v3
