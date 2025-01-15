@@ -41,10 +41,10 @@ jobs:
           skip-files: 'Dockerfile'
           severity: 'CRITICAL,HIGH'
           scanners: 'vuln'  
+          exit-code: 1
 
       - name: Read Trivy Report
         id: read-report
-        if: github.event_name == 'pull_request'
         run: |
           if [ -f trivy-report.txt ]; then
             REPORT=$(cat trivy-report.txt)
@@ -73,6 +73,20 @@ jobs:
               repo: context.repo.repo,
               body: message
             })
+
+      - name: Create Job Summary
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "## Trivy Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f trivy-report.txt ]; then
+            echo "🚨 Vulnerabilities Found:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Check for vulnerabilities
         if: steps.read-report.outputs.has_vulnerabilities == 'true'
