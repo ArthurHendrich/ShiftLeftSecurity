@@ -31,51 +31,6 @@ jobs:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
         continue-on-error: true
 
-      - name: Get Gitleaks Results
-        id: get-results
-        if: always()
-        run: |
-          if [ -f results.sarif ]; then
-            FINDINGS=$(jq -r '.runs[0].results[] | "- **Rule:** " + .ruleId + "\n  **File:** " + .locations[0].physicalLocation.artifactLocation.uri + ":" + (.locations[0].physicalLocation.region.startLine | tostring) + "\n  **Details:** " + .message.text + "\n"' results.sarif 2>/dev/null || echo "")
-            TOTAL=$(jq -r '.runs[0].results | length' results.sarif 2>/dev/null || echo "0")
-            echo "total=$TOTAL" >> $GITHUB_OUTPUT
-            echo "findings<<EOF" >> $GITHUB_ENV
-            echo "$FINDINGS" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          else
-            echo "total=0" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Comment PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const findings = process.env.findings;
-            const total = parseInt('${{ steps.get-results.outputs.total }}');
-            
-            let message = '## 🔍 Gitleaks Security Scan Results\n\n';
-            message += '### Summary\n';
-            
-            if (total > 0) {
-              message += `⚠️ **${total} potential secret(s) detected**\n\n`;
-              message += '<details>\n';
-              message += '<summary>Click to see detailed results</summary>\n\n';
-              message += findings;
-              message += '</details>\n\n';
-              message += '⚠️ Please review and remove any committed secrets before merging.';
-            } else {
-              message += '✅ No secrets detected in this scan!';
-            }
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            });
-
       - name: Create Job Summary
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
@@ -97,5 +52,5 @@ jobs:
           fi
 
       - name: Exit on findings
-        if: steps.get-results.outputs.total != '0'
+        if: failure() || steps.gitleaks.outcome == 'failure'
         run: exit 1
