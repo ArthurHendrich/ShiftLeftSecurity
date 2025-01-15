@@ -13,6 +13,12 @@ import paramiko
 import jwt
 import urllib3
 urllib3.disable_warnings()  # Disabling SSL warnings - vulnerable
+import subprocess
+import pickle
+import xml.etree.ElementTree as ET
+import base64
+import hashlib
+import json
 
 from database import db
 from models import User, Vulnerability
@@ -105,7 +111,7 @@ def upload_file():
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             file.save(filepath)
             flash('File uploaded successfully')
-    return render_template('upload.html')
+    return render_template('upload.html', files=os.listdir(app.config['UPLOAD_FOLDER']) if os.path.exists(app.config['UPLOAD_FOLDER']) else [])
 
 @app.route('/yaml-parser', methods=['POST'])
 def yaml_parser():
@@ -145,7 +151,7 @@ def debug_info():
     }
     return jsonify(debug_info)
 
-@app.route('/api/users')
+@app.route('/api/users', methods=['GET'])
 def get_users():
     # Exposing all user data without authentication
     users = User.query.all()
@@ -153,7 +159,8 @@ def get_users():
         'id': user.id,
         'username': user.username,
         'email': user.email,
-        'password': user.password  # Deliberately exposing password hashes
+        'password': user.password,  # Deliberately exposing password hashes
+        'api_key': getattr(user, 'api_key', None)  # Safely get api_key if exists
     } for user in users])
 
 @app.route('/security-dashboard')
@@ -198,6 +205,77 @@ def vulnerability_stream():
             time.sleep(2)  # Check every 2 seconds
     
     return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/api/exec_code', methods=['POST'])
+def exec_code():
+    # Remote Code Execution vulnerability
+    code = request.form.get('code')
+    try:
+        result = eval(code)  # Dangerous eval execution
+        return jsonify({'result': str(result)})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/fetch', methods=['GET'])
+def fetch_url_api():
+    # SSRF vulnerability
+    url = request.args.get('url')
+    response = requests.get(url, verify=False)
+    return response.text
+
+@app.route('/api/weak_hash', methods=['POST'])
+def weak_hash():
+    # Weak hashing implementation
+    data = request.form.get('data')
+    return jsonify({
+        'md5': hashlib.md5(data.encode()).hexdigest(),
+        'sha1': hashlib.sha1(data.encode()).hexdigest()
+    })
+
+@app.route('/api/redirect', methods=['GET'])
+def redirect_url():
+    # Open redirect vulnerability
+    url = request.args.get('url')
+    return redirect(url)
+
+@app.route('/api/file_read', methods=['GET'])
+def read_file():
+    # Path traversal vulnerability
+    filename = request.args.get('filename')
+    try:
+        with open(filename, 'r') as f:
+            content = f.read()
+        return content
+    except Exception as e:
+        return str(e)
+
+@app.route('/api/save_data', methods=['POST'])
+def save_data():
+    # NoSQL Injection vulnerability example
+    data = request.get_json()
+    query = json.loads(data.get('query', '{}'))
+    # Simulating NoSQL query execution
+    return jsonify({'status': 'saved', 'query': query})
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    # Information disclosure in health check
+    import platform
+    return jsonify({
+        'status': 'up',
+        'python_version': sys.version,
+        'platform': platform.platform(),
+        'environment': dict(os.environ),
+        'dependencies': {
+            'Flask': Flask.__version__,
+            'SQLAlchemy': SQLAlchemy.__version__
+        }
+    })
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

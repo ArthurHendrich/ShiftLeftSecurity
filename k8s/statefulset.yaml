@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vulnerable-db
+  namespace: dev
+spec:
+  serviceName: "vulnerable-db"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vulnerable-db
+  template:
+    metadata:
+      labels:
+        app: vulnerable-db
+    spec:
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      containers:
+      - name: postgres
+        image: postgres:9.6
+        securityContext:
+          privileged: true
+          capabilities:
+            add: ["ALL"]
+        env:
+        - name: POSTGRES_USER
+          value: "admin"
+        - name: POSTGRES_PASSWORD
+          value: "admin123"
+        - name: POSTGRES_DB
+          value: "vulnerable_db"
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: backup
+          mountPath: /backup
+      volumes:
+      - name: backup
+        hostPath:
+          path: /mnt/backup
+          type: DirectoryOrCreate
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi 
