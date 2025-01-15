@@ -30,7 +30,7 @@ jobs:
           path: |
             semgrep-sonarqube.json
 
-  sonarqube-analysis:
+  sonarqube-scan:
     needs: semgrep-scan
     runs-on: ubuntu-latest
     steps:
