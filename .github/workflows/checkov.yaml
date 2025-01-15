@@ -1,12 +1,10 @@
 name: Checkov
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
-  workflow_dispatch: {}
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,15 +15,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.12
 
-      - name: Test with Checkov
-        id: checkov
+      - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          directory: /
-          skip_path: ".github,usr/local/lib/python3.11"
+          directory: '.'
+          skip_path: ".github,.git,venv"
           quiet: true
