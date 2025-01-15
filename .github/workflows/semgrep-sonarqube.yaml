@@ -76,3 +76,9 @@ jobs:
             -Dsonar.login=${SONAR_TOKEN} \
             -Dsonar.externalIssuesReportPaths=semgrep-sonarqube.json \
             -Dsonar.verbose=true
+
+      - name: Sonarqube Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
