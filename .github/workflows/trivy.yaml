@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   trivy-scan:
-    name: Scan Dependencies
+    name: Trivy Scan
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
