@@ -8,11 +8,6 @@ on:
       - main
   workflow_dispatch: {}
 
-permissions:
-  actions: read
-  contents: read
-  security-events: write
-
 jobs:
   build:
     name: Checkov scan
@@ -26,6 +21,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.12
+
       - name: Test with Checkov
         id: checkov
         uses: bridgecrewio/checkov-action@master
