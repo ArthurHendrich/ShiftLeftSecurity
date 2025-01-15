@@ -60,6 +60,7 @@ jobs:
         uses: warchant/setup-sonar-scanner@v8
 
       - name: SonarQube Analysis
+        id: sonar
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -73,8 +74,71 @@ jobs:
             -Dsonar.externalIssuesReportPaths=semgrep-sonarqube.json \
             -Dsonar.verbose=true
 
+      - name: Get SonarQube Results
+        id: sonarqube_status
+        if: github.event_name == 'pull_request'
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sleep 10
+          
+          # Get project status
+          STATUS_RESPONSE=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=ShiftLeftSecurity")
+          STATUS=$(echo $STATUS_RESPONSE | jq -r '.projectStatus.status')
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          
+          # Get issue counts by type
+          ISSUES_RESPONSE=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/search?componentKeys=ShiftLeftSecurity&types=VULNERABILITY,BUG,CODE_SMELL&ps=1&facets=types")
+          echo "issues<<EOF" >> $GITHUB_ENV
+          echo "$ISSUES_RESPONSE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = '${{ steps.sonarqube_status.outputs.status }}';
+            const issues = JSON.parse(process.env.issues);
+            
+            let message = '## 🔍 SonarQube Analysis Results\n\n';
+            message += '### Quality Gate Status\n';
+            message += status === 'OK' 
+              ? '✅ **Passed**\n\n'
+              : '❌ **Failed**\n\n';
+            
+            const facets = issues.facets.find(f => f.property === 'types');
+            if (facets) {
+              message += '### Issues Summary\n\n';
+              const types = {
+                VULNERABILITY: '🛡️ Security Issues',
+                BUG: '🐛 Bugs',
+                CODE_SMELL: '🔧 Code Smells'
+              };
+              
+              facets.values.forEach(value => {
+                if (types[value.val]) {
+                  message += `- ${types[value.val]}: **${value.count}**\n`;
+                }
+              });
+            }
+            
+            message += `\n🔗 [View detailed report](${process.env.SONAR_HOST_URL}/dashboard?id=ShiftLeftSecurity)`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
       - name: Sonarqube Quality Gate
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         env:

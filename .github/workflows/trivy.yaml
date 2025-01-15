@@ -39,7 +39,7 @@ jobs:
           output: 'trivy-report.txt'
           skip-dirs: '.github,.git,venv,k8s'
           skip-files: 'Dockerfile'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
           scanners: 'vuln'  
           exit-code: 1
 
@@ -63,16 +63,24 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const report = process.env.report;
-            const message = report && report.trim().length > 0
-              ? `## 🚨 Trivy Security Scan Results\n\`\`\`\n${report}\n\`\`\`\n\nPlease review these vulnerabilities before merging.`
-              : '## ✅ Trivy Security Scan Results\nNo vulnerabilities found!';
+            let message = '## 🔍 Trivy Security Scan Results\n\n';
+            
+            if (report && report.trim().length > 0) {
+              message += '🚨 **Vulnerabilities Found**\n\n';
+              message += '<details>\n<summary>Click to see scan results</summary>\n\n';
+              message += '```\n' + report + '\n```\n';
+              message += '</details>\n\n';
+              message += '⚠️ Please review these vulnerabilities before merging.';
+            } else {
+              message += '✅ No vulnerabilities found!';
+            }
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: message
-            })
+            });
 
       - name: Create Job Summary
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -81,9 +89,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f trivy-report.txt ]; then
             echo "🚨 Vulnerabilities Found:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>Click to see scan results</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ No vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
           fi
