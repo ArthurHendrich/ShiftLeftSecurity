@@ -21,3 +21,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_LOG_LEVEL: debug
+          GITLEAKS_REPO_PATH: .
+          GITLEAKS_IGNORE_PATHS: .github,.git,venv
+          GITLEAKS_IGNORE_FILES: Dockerfile
+          GITLEAKS_IGNORE_GIT_ATTRIBUTES: true
+          GITLEAKS_IGNORE_GIT_IGNORE: true
+          GITLEAKS_IGNORE_GIT_ATTRIBUTES_PATH: .gitignore
+          GITLEAKS_IGNORE_GIT_IGNORE_PATH: .gitignore

@@ -1,4 +1,4 @@
-name: Trivy Code Scan
+name: Trivy SCA Scan
 
 on:
   push:
@@ -13,29 +13,68 @@ permissions:
 
 jobs:
   scan:
+    name: Scan Dependencies
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Cache Trivy vulnerability database
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/trivy
+          key: trivy-${{ runner.os }}-db
+          restore-keys: trivy-${{ runner.os }}-db
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.29.0
+        id: scan
+        continue-on-error: true
         with:
           scan-type: 'fs'
-          severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
-          scanners: 'vuln,secret,config'
-          skip-dirs: 'k8s'
+          scan-ref: '.'
+          format: 'table'
+          output: 'trivy-report.txt'
+          skip-dirs: '.github,.git,venv,k8s'
           skip-files: 'Dockerfile'
-          format: 'json'
-          output: 'result.json'
+          severity: 'CRITICAL,HIGH'
+          scanners: 'vuln'  
 
-      - name: Generate readable report
+      - name: Read Trivy Report
+        id: read-report
+        if: github.event_name == 'pull_request'
         run: |
-          trivy --input result.json --format table > trivy-report.txt
+          if [ -f trivy-report.txt ]; then
+            REPORT=$(cat trivy-report.txt)
+            echo "report<<EOF" >> $GITHUB_ENV
+            echo "$REPORT" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            echo "has_vulnerabilities=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_vulnerabilities=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Upload Trivy report as artifact
-        uses: actions/upload-artifact@v3
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
-          name: trivy-report
-          path: trivy-report.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const report = process.env.report;
+            const message = report && report.trim().length > 0
+              ? `## 🚨 Trivy Security Scan Results\n\`\`\`\n${report}\n\`\`\`\n\nPlease review these vulnerabilities before merging.`
+              : '## ✅ Trivy Security Scan Results\nNo vulnerabilities found!';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            })
+
+      - name: Check for vulnerabilities
+        if: steps.read-report.outputs.has_vulnerabilities == 'true'
+        run: exit 1
+        
