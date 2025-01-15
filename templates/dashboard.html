@@ -1,34 +1,152 @@
-
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container">
-    <h2>Welcome {{ session['username'] }}</h2>
-    <div class="row mt-4">
-        <div class="col">
-            <h3>Recent Vulnerabilities</h3>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Severity</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for vuln in vulnerabilities %}
-                        <tr>
-                            <td>{{ vuln.type }}</td>
-                            <td>{{ vuln.severity }}</td>
-                            <td>{{ vuln.location }}</td>
-                            <td>{{ vuln.status }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<div class="row">
+    <div class="col-md-12">
+        <h2>Welcome to the Vulnerable Dashboard</h2>
+        <div class="alert alert-warning">
+            <strong>Warning:</strong> This application contains intentional security vulnerabilities for testing purposes.
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Vulnerable API Endpoints</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" onclick="fetchUsers()">
+                        List All Users (Exposes sensitive data)
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="executeCode()">
+                        Execute Code (Remote Code Execution)
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="fetchURL()">
+                        Fetch URL (SSRF Vulnerability)
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="generateHash()">
+                        Generate Hash (Weak Cryptography)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>System Information</h4>
+            </div>
+            <div class="card-body">
+                <div id="systemInfo">Loading...</div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Detected Vulnerabilities</h4>
+            </div>
+            <div class="card-body">
+                <div id="vulnerabilitiesList">
+                    {% if vulnerabilities %}
+                        {% for vuln in vulnerabilities %}
+                            <div class="vulnerability-card card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ vuln.type }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">Severity: {{ vuln.severity }}</h6>
+                                    <p class="card-text">{{ vuln.description }}</p>
+                                    <p class="card-text"><small class="text-muted">Location: {{ vuln.location }}</small></p>
+                                    <p class="card-text"><small class="text-muted">Status: {{ vuln.status }}</small></p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No vulnerabilities detected yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Vulnerable JavaScript functions
+function fetchUsers() {
+    fetch('/api/users')
+        .then(response => response.json())
+        .then(data => {
+            alert('User data (including passwords) fetched! Check console.');
+            console.log('User data:', data);
+        });
+}
+
+function executeCode() {
+    const code = prompt('Enter Python code to execute:');
+    if (code) {
+        fetch('/api/exec_code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `code=${encodeURIComponent(code)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Code executed! Result: ' + data.result);
+        });
+    }
+}
+
+function fetchURL() {
+    const url = prompt('Enter URL to fetch:');
+    if (url) {
+        fetch(`/api/fetch?url=${encodeURIComponent(url)}`)
+            .then(response => response.text())
+            .then(data => {
+                alert('URL fetched! Check console.');
+                console.log('Fetched data:', data);
+            });
+    }
+}
+
+function generateHash() {
+    const data = prompt('Enter data to hash:');
+    if (data) {
+        fetch('/api/weak_hash', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `data=${encodeURIComponent(data)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(`Hashes generated!\nMD5: ${data.md5}\nSHA1: ${data.sha1}`);
+        });
+    }
+}
+
+// Load system information on page load
+fetch('/api/health')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('systemInfo').innerHTML = `
+            <p><strong>Python Version:</strong> ${data.python_version}</p>
+            <p><strong>Platform:</strong> ${data.platform}</p>
+            <p><strong>Dependencies:</strong></p>
+            <ul>
+                ${Object.entries(data.dependencies).map(([key, value]) => 
+                    `<li>${key}: ${value}</li>`
+                ).join('')}
+            </ul>
+        `;
+    });
+</script>
 {% endblock %}

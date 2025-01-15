@@ -1,12 +1,62 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container">
-    <h2>File Upload</h2>
-    <form method="post" enctype="multipart/form-data">
-        <div class="form-group">
-            <input type="file" name="file" class="form-control">
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>File Upload</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Note:</strong> This file upload feature is intentionally vulnerable:
+                    <ul>
+                        <li>No file type validation</li>
+                        <li>No file size limits</li>
+                        <li>No malware scanning</li>
+                        <li>Files stored in public directory</li>
+                        <li>Original filenames preserved</li>
+                    </ul>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_file') }}">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Choose File</label>
+                        <input type="file" class="form-control" id="file" name="file" required>
+                        <small class="text-muted">Try uploading: .php, .jsp, .asp files</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload File</button>
+                </form>
+
+                <hr>
+
+                <div class="mt-4">
+                    <h4>Previously Uploaded Files</h4>
+                    <div id="uploadedFiles">
+                        <!-- Intentionally vulnerable - directory listing -->
+                        {% if files %}
+                            <ul class="list-group">
+                            {% for file in files %}
+                                <li class="list-group-item">
+                                    <a href="/uploads/{{ file }}" target="_blank">{{ file }}</a>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>No files uploaded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-3">Upload</button>
-    </form>
+    </div>
 </div>
+
+<script>
+// Intentionally vulnerable JavaScript
+function checkFileType() {
+    // No validation performed
+    return true;
+}
+</script>
 {% endblock %}

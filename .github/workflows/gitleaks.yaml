@@ -1,31 +1,56 @@
-name: GitLeaks
+name: Gitleaks Scan
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
 
 jobs:
   gitleaks-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks with Custom Config
+      - name: Run Gitleaks
+        id: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_CONFIG: .gitleaks.toml
-          GITLEAKS_LOG_LEVEL: debug
-          GITLEAKS_REPO_PATH: .
-          GITLEAKS_IGNORE_PATHS: .github,.git,venv
-          GITLEAKS_IGNORE_FILES: Dockerfile
-          GITLEAKS_IGNORE_GIT_ATTRIBUTES: true
-          GITLEAKS_IGNORE_GIT_IGNORE: true
-          GITLEAKS_IGNORE_GIT_ATTRIBUTES_PATH: .gitignore
-          GITLEAKS_IGNORE_GIT_IGNORE_PATH: .gitignore
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        continue-on-error: true
+
+      - name: Create Job Summary
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "## Gitleaks Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f results.sarif ]; then
+            TOTAL=$(jq -r '.runs[0].results | length' results.sarif 2>/dev/null || echo "0")
+            if [ "$TOTAL" -gt "0" ]; then
+              echo "⚠️ **${TOTAL} potential secret(s) detected**" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              jq -r '.runs[0].results[] | "Rule: " + .ruleId + "\nFile: " + .locations[0].physicalLocation.artifactLocation.uri + ":" + (.locations[0].physicalLocation.region.startLine | tostring) + "\nDetails: " + .message.text + "\n"' results.sarif >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ No secrets detected in this scan!" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ No secrets detected in this scan!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Exit on findings
+        if: failure() || steps.gitleaks.outcome == 'failure'
+        run: exit 1

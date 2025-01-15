@@ -4,6 +4,8 @@ FROM python:3.7-slim
 # Exposing sensitive information in build args (for demonstration only, not recommended)
 ARG DB_PASSWORD=admin123
 ARG SECRET_KEY=super_secret_key_123
+ARG AWS_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
+ARG AWS_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 # Running as root (security vulnerability, but this is for PoC)
 USER root
@@ -19,10 +21,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     libjpeg-dev \
     zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
+    openssh-server \
+    && rm -rf /var/lib/apt/lists/* \
+    && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config \
+    && echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config \
+    && echo 'root:password123' | chpasswd
 
-# Set working directory
+# Set working directory with wide permissions
 WORKDIR /app
+RUN chmod 777 /app
 
 # Copy the application files
 COPY . .
@@ -30,9 +37,9 @@ COPY . .
 # Update pip to the latest version for better handling of legacy wheels
 RUN pip install --no-cache-dir --upgrade pip
 
-# Install Python dependencies
-# Removed --no-deps to let pip fetch necessary indirect dependencies.
-RUN pip install --no-cache-dir Flask==0.12.1 \
+# Install Python dependencies with known vulnerabilities
+RUN pip install --no-cache-dir \
+    Flask==0.12.1 \
     Werkzeug==0.11.15 \
     Jinja2==2.8.1 \
     SQLAlchemy==1.1.5 \
@@ -47,16 +54,37 @@ RUN pip install --no-cache-dir Flask==0.12.1 \
     psycopg2-binary==2.8.3 \
     flask-sqlalchemy==2.1 \
     kubernetes==10.0.1 \
-    pyjwt
+    pyjwt==1.5.0 \
+    tensorflow==1.14.0 \
+    numpy==1.16.0 \
+    pandas==0.24.0 \
+    scrapy==1.5.0 \
+    twisted==17.9.0 \
+    django-debug-toolbar==1.11.1 \
+    python-ldap==3.1.0 \
+    xmltodict==0.11.0
 
 # Exposing sensitive environment variables (for demonstration only)
 ENV DATABASE_URL="postgresql://admin:admin123@db:5432/vulnerable_db" \
     FLASK_ENV=development \
     DEBUG=1 \
-    SECRET_KEY=${SECRET_KEY}
+    SECRET_KEY=${SECRET_KEY} \
+    AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
+    ADMIN_PASSWORD="admin123" \
+    SMTP_PASSWORD="smtp_password123" \
+    REDIS_PASSWORD="redis123" \
+    SSH_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA1234567890\n-----END RSA PRIVATE KEY-----"
+
+# Enable all debug endpoints and disable security features
+ENV FLASK_DEBUG=1 \
+    PYTHONWARNINGS="ignore" \
+    PYTHONHTTPSVERIFY=0 \
+    REQUESTS_CA_BUNDLE="" \
+    NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # Expose ports
-EXPOSE 5000 9090
+EXPOSE 5000 9090 22 3306 6379
 
-# Run the application with root privileges (insecure, for PoC)
-CMD ["python", "app.py"]
+# Run multiple services (anti-pattern)
+CMD service ssh start && python app.py
