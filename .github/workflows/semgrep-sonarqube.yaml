@@ -31,7 +31,7 @@ jobs:
           python3 convert_semgrep_to_sonarqube.py semgrep-results.json > semgrep-sonarqube.json
 
       - name: Upload results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: semgrep-results
           path: |
