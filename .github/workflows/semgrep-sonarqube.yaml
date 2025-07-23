@@ -14,11 +14,18 @@ permissions:
 jobs:
   semgrep-scan:
     runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Semgrep and dependencies
+        run: |
+          pip install semgrep requests
 
       - name: Run Semgrep scan
         run: |
@@ -26,8 +33,6 @@ jobs:
 
       - name: Convert Semgrep JSON to SonarQube format
         run: |
-          apt-get update && apt-get install -y python3 python3-pip
-          pip3 install requests
           python3 convert_semgrep_to_sonarqube.py semgrep-results.json > semgrep-sonarqube.json
 
       - name: Upload results
